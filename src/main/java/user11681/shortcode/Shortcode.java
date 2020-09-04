@@ -31,6 +31,7 @@ import org.objectweb.asm.tree.TableSwitchInsnNode;
 import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
+@SuppressWarnings({"unused", "RedundantSuppression"})
 public interface Shortcode extends Opcodes {
     int ABSTRACT_ALL = ACC_NATIVE | ACC_ABSTRACT;
     int INAPPLICABLE = 0;
