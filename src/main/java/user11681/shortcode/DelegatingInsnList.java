@@ -20,10 +20,6 @@ import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
 public class DelegatingInsnList extends InsnList {
-    private static LabelNode getLabelNode(final Label label) {
-        return (LabelNode) (label.info == null ? label.info = new LabelNode() : label.info);
-    }
-
     private static Object[] getLabelNodes(final Object[] objects) {
         final Object[] labelNodes = new Object[objects.length];
         Object object;
@@ -49,6 +45,10 @@ public class DelegatingInsnList extends InsnList {
         }
 
         return labelNodes;
+    }
+
+    private static LabelNode getLabelNode(final Label label) {
+        return (LabelNode) (label.info == null ? label.info = new LabelNode() : label.info);
     }
 
     public final void addFrame(final int type, final int numLocal, final Object[] local, final int numStack, final Object[] stack) {

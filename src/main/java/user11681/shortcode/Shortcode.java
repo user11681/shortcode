@@ -33,211 +33,371 @@ import org.objectweb.asm.tree.VarInsnNode;
 
 public interface Shortcode extends Opcodes {
     int ABSTRACT_ALL = ACC_NATIVE | ACC_ABSTRACT;
-    int NA = 0;
+    int INAPPLICABLE = 0;
 
-    int[] STACK_SIZE_DELTA = {
-            0, // nop = 0 (0x0)
-            1, // aconst_null = 1 (0x1)
-            1, // iconst_m1 = 2 (0x2)
-            1, // iconst_0 = 3 (0x3)
-            1, // iconst_1 = 4 (0x4)
-            1, // iconst_2 = 5 (0x5)
-            1, // iconst_3 = 6 (0x6)
-            1, // iconst_4 = 7 (0x7)
-            1, // iconst_5 = 8 (0x8)
-            2, // lconst_0 = 9 (0x9)
-            2, // lconst_1 = 10 (0xa)
-            1, // fconst_0 = 11 (0xb)
-            1, // fconst_1 = 12 (0xc)
-            1, // fconst_2 = 13 (0xd)
-            2, // dconst_0 = 14 (0xe)
-            2, // dconst_1 = 15 (0xf)
-            1, // bipush = 16 (0x10)
-            1, // sipush = 17 (0x11)
-            1, // ldc = 18 (0x12)
-            NA, // ldc_w = 19 (0x13)
-            NA, // ldc2_w = 20 (0x14)
-            1, // iload = 21 (0x15)
-            2, // lload = 22 (0x16)
-            1, // fload = 23 (0x17)
-            2, // dload = 24 (0x18)
-            1, // aload = 25 (0x19)
-            NA, // iload_0 = 26 (0x1a)
-            NA, // iload_1 = 27 (0x1b)
-            NA, // iload_2 = 28 (0x1c)
-            NA, // iload_3 = 29 (0x1d)
-            NA, // lload_0 = 30 (0x1e)
-            NA, // lload_1 = 31 (0x1f)
-            NA, // lload_2 = 32 (0x20)
-            NA, // lload_3 = 33 (0x21)
-            NA, // fload_0 = 34 (0x22)
-            NA, // fload_1 = 35 (0x23)
-            NA, // fload_2 = 36 (0x24)
-            NA, // fload_3 = 37 (0x25)
-            NA, // dload_0 = 38 (0x26)
-            NA, // dload_1 = 39 (0x27)
-            NA, // dload_2 = 40 (0x28)
-            NA, // dload_3 = 41 (0x29)
-            NA, // aload_0 = 42 (0x2a)
-            NA, // aload_1 = 43 (0x2b)
-            NA, // aload_2 = 44 (0x2c)
-            NA, // aload_3 = 45 (0x2d)
-            -1, // iaload = 46 (0x2e)
-            0, // laload = 47 (0x2f)
-            -1, // faload = 48 (0x30)
-            0, // daload = 49 (0x31)
-            -1, // aaload = 50 (0x32)
-            -1, // baload = 51 (0x33)
-            -1, // caload = 52 (0x34)
-            -1, // saload = 53 (0x35)
-            -1, // istore = 54 (0x36)
-            -2, // lstore = 55 (0x37)
-            -1, // fstore = 56 (0x38)
-            -2, // dstore = 57 (0x39)
-            -1, // astore = 58 (0x3a)
-            NA, // istore_0 = 59 (0x3b)
-            NA, // istore_1 = 60 (0x3c)
-            NA, // istore_2 = 61 (0x3d)
-            NA, // istore_3 = 62 (0x3e)
-            NA, // lstore_0 = 63 (0x3f)
-            NA, // lstore_1 = 64 (0x40)
-            NA, // lstore_2 = 65 (0x41)
-            NA, // lstore_3 = 66 (0x42)
-            NA, // fstore_0 = 67 (0x43)
-            NA, // fstore_1 = 68 (0x44)
-            NA, // fstore_2 = 69 (0x45)
-            NA, // fstore_3 = 70 (0x46)
-            NA, // dstore_0 = 71 (0x47)
-            NA, // dstore_1 = 72 (0x48)
-            NA, // dstore_2 = 73 (0x49)
-            NA, // dstore_3 = 74 (0x4a)
-            NA, // astore_0 = 75 (0x4b)
-            NA, // astore_1 = 76 (0x4c)
-            NA, // astore_2 = 77 (0x4d)
-            NA, // astore_3 = 78 (0x4e)
-            -3, // iastore = 79 (0x4f)
-            -4, // lastore = 80 (0x50)
-            -3, // fastore = 81 (0x51)
-            -4, // dastore = 82 (0x52)
-            -3, // aastore = 83 (0x53)
-            -3, // bastore = 84 (0x54)
-            -3, // castore = 85 (0x55)
-            -3, // sastore = 86 (0x56)
-            -1, // pop = 87 (0x57)
-            -2, // pop2 = 88 (0x58)
-            1, // dup = 89 (0x59)
-            1, // dup_x1 = 90 (0x5a)
-            1, // dup_x2 = 91 (0x5b)
-            2, // dup2 = 92 (0x5c)
-            2, // dup2_x1 = 93 (0x5d)
-            2, // dup2_x2 = 94 (0x5e)
-            0, // swap = 95 (0x5f)
-            -1, // iadd = 96 (0x60)
-            -2, // ladd = 97 (0x61)
-            -1, // fadd = 98 (0x62)
-            -2, // dadd = 99 (0x63)
-            -1, // isub = 100 (0x64)
-            -2, // lsub = 101 (0x65)
-            -1, // fsub = 102 (0x66)
-            -2, // dsub = 103 (0x67)
-            -1, // imul = 104 (0x68)
-            -2, // lmul = 105 (0x69)
-            -1, // fmul = 106 (0x6a)
-            -2, // dmul = 107 (0x6b)
-            -1, // idiv = 108 (0x6c)
-            -2, // ldiv = 109 (0x6d)
-            -1, // fdiv = 110 (0x6e)
-            -2, // ddiv = 111 (0x6f)
-            -1, // irem = 112 (0x70)
-            -2, // lrem = 113 (0x71)
-            -1, // frem = 114 (0x72)
-            -2, // drem = 115 (0x73)
-            0, // ineg = 116 (0x74)
-            0, // lneg = 117 (0x75)
-            0, // fneg = 118 (0x76)
-            0, // dneg = 119 (0x77)
-            -1, // ishl = 120 (0x78)
-            -1, // lshl = 121 (0x79)
-            -1, // ishr = 122 (0x7a)
-            -1, // lshr = 123 (0x7b)
-            -1, // iushr = 124 (0x7c)
-            -1, // lushr = 125 (0x7d)
-            -1, // iand = 126 (0x7e)
-            -2, // land = 127 (0x7f)
-            -1, // ior = 128 (0x80)
-            -2, // lor = 129 (0x81)
-            -1, // ixor = 130 (0x82)
-            -2, // lxor = 131 (0x83)
-            0, // iinc = 132 (0x84)
-            1, // i2l = 133 (0x85)
-            0, // i2f = 134 (0x86)
-            1, // i2d = 135 (0x87)
-            -1, // l2i = 136 (0x88)
-            -1, // l2f = 137 (0x89)
-            0, // l2d = 138 (0x8a)
-            0, // f2i = 139 (0x8b)
-            1, // f2l = 140 (0x8c)
-            1, // f2d = 141 (0x8d)
-            -1, // d2i = 142 (0x8e)
-            0, // d2l = 143 (0x8f)
-            -1, // d2f = 144 (0x90)
-            0, // i2b = 145 (0x91)
-            0, // i2c = 146 (0x92)
-            0, // i2s = 147 (0x93)
-            -3, // lcmp = 148 (0x94)
-            -1, // fcmpl = 149 (0x95)
-            -1, // fcmpg = 150 (0x96)
-            -3, // dcmpl = 151 (0x97)
-            -3, // dcmpg = 152 (0x98)
-            -1, // ifeq = 153 (0x99)
-            -1, // ifne = 154 (0x9a)
-            -1, // iflt = 155 (0x9b)
-            -1, // ifge = 156 (0x9c)
-            -1, // ifgt = 157 (0x9d)
-            -1, // ifle = 158 (0x9e)
-            -2, // if_icmpeq = 159 (0x9f)
-            -2, // if_icmpne = 160 (0xa0)
-            -2, // if_icmplt = 161 (0xa1)
-            -2, // if_icmpge = 162 (0xa2)
-            -2, // if_icmpgt = 163 (0xa3)
-            -2, // if_icmple = 164 (0xa4)
-            -2, // if_acmpeq = 165 (0xa5)
-            -2, // if_acmpne = 166 (0xa6)
-            0, // goto = 167 (0xa7)
-            1, // jsr = 168 (0xa8)
-            0, // ret = 169 (0xa9)
-            -1, // tableswitch = 170 (0xaa)
-            -1, // lookupswitch = 171 (0xab)
-            -1, // ireturn = 172 (0xac)
-            -2, // lreturn = 173 (0xad)
-            -1, // freturn = 174 (0xae)
-            -2, // dreturn = 175 (0xaf)
-            -1, // areturn = 176 (0xb0)
-            0, // return = 177 (0xb1)
-            NA, // getstatic = 178 (0xb2)
-            NA, // putstatic = 179 (0xb3)
-            NA, // getfield = 180 (0xb4)
-            NA, // putfield = 181 (0xb5)
-            NA, // invokevirtual = 182 (0xb6)
-            NA, // invokespecial = 183 (0xb7)
-            NA, // invokestatic = 184 (0xb8)
-            NA, // invokeinterface = 185 (0xb9)
-            NA, // invokedynamic = 186 (0xba)
-            1, // new = 187 (0xbb)
-            0, // newarray = 188 (0xbc)
-            0, // anewarray = 189 (0xbd)
-            0, // arraylength = 190 (0xbe)
-            NA, // athrow = 191 (0xbf)
-            0, // checkcast = 192 (0xc0)
-            0, // instanceof = 193 (0xc1)
-            -1, // monitorenter = 194 (0xc2)
-            -1, // monitorexit = 195 (0xc3)
-            NA, // wide = 196 (0xc4)
-            NA, // multianewarray = 197 (0xc5)
-            -1, // ifnull = 198 (0xc6)
-            -1, // ifnonnull = 199 (0xc7)
-            NA, // goto_w = 200 (0xc8)
-            NA // jsr_w = 201 (0xc9)
+    int[] DELTA_STACK_SIZE = {
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        2,
+        1,
+        1,
+        1,
+        2,
+        2,
+        1,
+        1,
+        1,
+        INAPPLICABLE,
+        INAPPLICABLE,
+        1,
+        2,
+        1,
+        2,
+        1,
+        INAPPLICABLE,
+        INAPPLICABLE,
+        INAPPLICABLE,
+        INAPPLICABLE,
+        INAPPLICABLE,
+        INAPPLICABLE,
+        INAPPLICABLE,
+        INAPPLICABLE,
+        INAPPLICABLE,
+        INAPPLICABLE,
+        INAPPLICABLE,
+        INAPPLICABLE,
+        INAPPLICABLE,
+        INAPPLICABLE,
+        INAPPLICABLE,
+        INAPPLICABLE,
+        INAPPLICABLE,
+        INAPPLICABLE,
+        INAPPLICABLE,
+        INAPPLICABLE,
+        -1,
+        0,
+        -1,
+        0,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -2,
+        -1,
+        -2,
+        -1,
+        INAPPLICABLE,
+        INAPPLICABLE,
+        INAPPLICABLE,
+        INAPPLICABLE,
+        INAPPLICABLE,
+        INAPPLICABLE,
+        INAPPLICABLE,
+        INAPPLICABLE,
+        INAPPLICABLE,
+        INAPPLICABLE,
+        INAPPLICABLE,
+        INAPPLICABLE,
+        INAPPLICABLE,
+        INAPPLICABLE,
+        INAPPLICABLE,
+        INAPPLICABLE,
+        INAPPLICABLE,
+        INAPPLICABLE,
+        INAPPLICABLE,
+        INAPPLICABLE,
+        -3,
+        -4,
+        -3,
+        -4,
+        -3,
+        -3,
+        -3,
+        -3,
+        -1,
+        -2,
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        0,
+        -1,
+        -2,
+        -1,
+        -2,
+        -1,
+        -2,
+        -1,
+        -2,
+        -1,
+        -2,
+        -1,
+        -2,
+        -1,
+        -2,
+        -1,
+        -2,
+        -1,
+        -2,
+        -1,
+        -2,
+        0,
+        0,
+        0,
+        0,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -2,
+        -1,
+        -2,
+        -1,
+        -2,
+        0,
+        1,
+        0,
+        1,
+        -1,
+        -1,
+        0,
+        0,
+        1,
+        1,
+        -1,
+        0,
+        -1,
+        0,
+        0,
+        0,
+        -3,
+        -1,
+        -1,
+        -3,
+        -3,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -2,
+        -2,
+        -2,
+        -2,
+        -2,
+        -2,
+        -2,
+        -2,
+        0,
+        1,
+        0,
+        -1,
+        -1,
+        -1,
+        -2,
+        -1,
+        -2,
+        -1,
+        0,
+        INAPPLICABLE,
+        INAPPLICABLE,
+        INAPPLICABLE,
+        INAPPLICABLE,
+        INAPPLICABLE,
+        INAPPLICABLE,
+        INAPPLICABLE,
+        INAPPLICABLE,
+        INAPPLICABLE,
+        1,
+        0,
+        0,
+        0,
+        INAPPLICABLE,
+        0,
+        0,
+        -1,
+        -1,
+        INAPPLICABLE,
+        INAPPLICABLE,
+        -1,
+        -1,
+        INAPPLICABLE,
+        INAPPLICABLE
+    };
+
+    String[] TO_STRING = {
+        "nop",
+        "aconst_null",
+        "iconst_m1",
+        "iconst_0",
+        "iconst_1",
+        "iconst_2",
+        "iconst_3",
+        "iconst_4",
+        "iconst_5",
+        "lconst_0",
+        "lconst_1",
+        "fconst_0",
+        "fconst_1",
+        "fconst_2",
+        "dconst_0",
+        "dconst_1",
+        "bipush",
+        "sipush",
+        "ldc",
+        "iload",
+        "lload",
+        "fload",
+        "dload",
+        "aload",
+        "iaload",
+        "laload",
+        "faload",
+        "daload",
+        "aaload",
+        "baload",
+        "caload",
+        "saload",
+        "istore",
+        "lstore",
+        "fstore",
+        "dstore",
+        "astore",
+        "iastore",
+        "lastore",
+        "fastore",
+        "dastore",
+        "aastore",
+        "bastore",
+        "castore",
+        "sastore",
+        "pop",
+        "pop2",
+        "dup",
+        "dup_x1",
+        "dup_x2",
+        "dup2",
+        "dup2_x1",
+        "dup2_x2",
+        "swap",
+        "iadd",
+        "ladd",
+        "fadd",
+        "dadd",
+        "isub",
+        "lsub",
+        "fsub",
+        "dsub",
+        "imul",
+        "lmul",
+        "fmul",
+        "dmul",
+        "idiv",
+        "ldiv",
+        "fdiv",
+        "ddiv",
+        "irem",
+        "lrem",
+        "frem",
+        "drem",
+        "ineg",
+        "lneg",
+        "fneg",
+        "dneg",
+        "ishl",
+        "lshl",
+        "ishr",
+        "lshr",
+        "iushr",
+        "lushr",
+        "iand",
+        "land",
+        "ior",
+        "lor",
+        "ixor",
+        "lxor",
+        "iinc",
+        "i2l",
+        "i2f",
+        "i2d",
+        "l2i",
+        "l2f",
+        "l2d",
+        "f2i",
+        "f2l",
+        "f2d",
+        "d2i",
+        "d2l",
+        "d2f",
+        "i2b",
+        "i2c",
+        "i2s",
+        "lcmp",
+        "fcmpl",
+        "fcmpg",
+        "dcmpl",
+        "dcmpg",
+        "ifeq",
+        "ifne",
+        "iflt",
+        "ifge",
+        "ifgt",
+        "ifle",
+        "if_icmpeq",
+        "if_icmpne",
+        "if_icmplt",
+        "if_icmpge",
+        "if_icmpgt",
+        "if_icmple",
+        "if_acmpeq",
+        "if_acmpne",
+        "goto",
+        "jsr",
+        "ret",
+        "tableswitch",
+        "lookupswitch",
+        "ireturn",
+        "lreturn",
+        "freturn",
+        "dreturn",
+        "areturn",
+        "return",
+        "getstatic",
+        "putstatic",
+        "getfield",
+        "putfield",
+        "invokevirtual",
+        "invokespecial",
+        "invokestatic",
+        "invokeinterface",
+        "invokedynamic",
+        "new",
+        "newarray",
+        "anewarray",
+        "arraylength",
+        "athrow",
+        "checkcast",
+        "instanceof",
+        "monitorenter",
+        "monitorexit",
+        "multianewarray",
+        "ifnull",
+        "ifnonnull"
     };
 
     static String getInternalName(final Class<?> klass) {
