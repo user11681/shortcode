@@ -1,4 +1,4 @@
-package user11681.shortcode;
+package user11681.shortcode.instruction;
 
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;

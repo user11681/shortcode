@@ -1,4 +1,4 @@
-package user11681.shortcode;
+package user11681.shortcode.instruction;
 
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 import org.objectweb.asm.Type;
@@ -12,6 +12,7 @@ import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.MultiANewArrayInsnNode;
 import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
+import user11681.shortcode.Shortcode;
 
 public class InstructionWalker implements Shortcode {
     public final ReferenceArrayList<String> operands = new ReferenceArrayList<>();

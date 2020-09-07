@@ -1,9 +1,16 @@
 package user11681.shortcode;
 
+import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Array;
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
@@ -31,10 +38,10 @@ import org.objectweb.asm.tree.TableSwitchInsnNode;
 import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
-@SuppressWarnings({"unused", "RedundantSuppression"})
+@SuppressWarnings({"unused", "RedundantSuppression", "unchecked"})
 public interface Shortcode extends Opcodes {
     int ABSTRACT_ALL = ACC_NATIVE | ACC_ABSTRACT;
-    int INAPPLICABLE = 0;
+    int NA = 0;
 
     int[] DELTA_STACK_SIZE = {
         0,
@@ -56,33 +63,33 @@ public interface Shortcode extends Opcodes {
         1,
         1,
         1,
-        INAPPLICABLE,
-        INAPPLICABLE,
+        NA,
+        NA,
         1,
         2,
         1,
         2,
         1,
-        INAPPLICABLE,
-        INAPPLICABLE,
-        INAPPLICABLE,
-        INAPPLICABLE,
-        INAPPLICABLE,
-        INAPPLICABLE,
-        INAPPLICABLE,
-        INAPPLICABLE,
-        INAPPLICABLE,
-        INAPPLICABLE,
-        INAPPLICABLE,
-        INAPPLICABLE,
-        INAPPLICABLE,
-        INAPPLICABLE,
-        INAPPLICABLE,
-        INAPPLICABLE,
-        INAPPLICABLE,
-        INAPPLICABLE,
-        INAPPLICABLE,
-        INAPPLICABLE,
+        NA,
+        NA,
+        NA,
+        NA,
+        NA,
+        NA,
+        NA,
+        NA,
+        NA,
+        NA,
+        NA,
+        NA,
+        NA,
+        NA,
+        NA,
+        NA,
+        NA,
+        NA,
+        NA,
+        NA,
         -1,
         0,
         -1,
@@ -96,26 +103,26 @@ public interface Shortcode extends Opcodes {
         -1,
         -2,
         -1,
-        INAPPLICABLE,
-        INAPPLICABLE,
-        INAPPLICABLE,
-        INAPPLICABLE,
-        INAPPLICABLE,
-        INAPPLICABLE,
-        INAPPLICABLE,
-        INAPPLICABLE,
-        INAPPLICABLE,
-        INAPPLICABLE,
-        INAPPLICABLE,
-        INAPPLICABLE,
-        INAPPLICABLE,
-        INAPPLICABLE,
-        INAPPLICABLE,
-        INAPPLICABLE,
-        INAPPLICABLE,
-        INAPPLICABLE,
-        INAPPLICABLE,
-        INAPPLICABLE,
+        NA,
+        NA,
+        NA,
+        NA,
+        NA,
+        NA,
+        NA,
+        NA,
+        NA,
+        NA,
+        NA,
+        NA,
+        NA,
+        NA,
+        NA,
+        NA,
+        NA,
+        NA,
+        NA,
+        NA,
         -3,
         -4,
         -3,
@@ -215,30 +222,30 @@ public interface Shortcode extends Opcodes {
         -2,
         -1,
         0,
-        INAPPLICABLE,
-        INAPPLICABLE,
-        INAPPLICABLE,
-        INAPPLICABLE,
-        INAPPLICABLE,
-        INAPPLICABLE,
-        INAPPLICABLE,
-        INAPPLICABLE,
-        INAPPLICABLE,
+        NA,
+        NA,
+        NA,
+        NA,
+        NA,
+        NA,
+        NA,
+        NA,
+        NA,
         1,
         0,
         0,
         0,
-        INAPPLICABLE,
+        NA,
         0,
         0,
         -1,
         -1,
-        INAPPLICABLE,
-        INAPPLICABLE,
+        NA,
+        NA,
         -1,
         -1,
-        INAPPLICABLE,
-        INAPPLICABLE
+        NA,
+        NA
     };
 
     String[] TO_STRING = {
@@ -261,11 +268,33 @@ public interface Shortcode extends Opcodes {
         "bipush",
         "sipush",
         "ldc",
+        "ldc_w",
+        "ldc2_w",
         "iload",
         "lload",
         "fload",
         "dload",
         "aload",
+        "iload_0",
+        "iload_1",
+        "iload_2",
+        "iload_3",
+        "lload_0",
+        "lload_1",
+        "lload_2",
+        "lload_3",
+        "fload_0",
+        "fload_1",
+        "fload_2",
+        "fload_3",
+        "dload_0",
+        "dload_1",
+        "dload_2",
+        "dload_3",
+        "aload_0",
+        "aload_1",
+        "aload_2",
+        "aload_3",
         "iaload",
         "laload",
         "faload",
@@ -279,6 +308,26 @@ public interface Shortcode extends Opcodes {
         "fstore",
         "dstore",
         "astore",
+        "istore_0",
+        "istore_1",
+        "istore_2",
+        "istore_3",
+        "lstore_0",
+        "lstore_1",
+        "lstore_2",
+        "lstore_3",
+        "fstore_0",
+        "fstore_1",
+        "fstore_2",
+        "fstore_3",
+        "dstore_0",
+        "dstore_1",
+        "dstore_2",
+        "dstore_3",
+        "astore_0",
+        "astore_1",
+        "astore_2",
+        "astore_3",
         "iastore",
         "lastore",
         "fastore",
@@ -396,30 +445,28 @@ public interface Shortcode extends Opcodes {
         "instanceof",
         "monitorenter",
         "monitorexit",
+        "wide",
         "multianewarray",
         "ifnull",
-        "ifnonnull"
+        "ifnonnulL"
     };
 
-    static String getInternalName(final Class<?> klass) {
-        return toInternalName(klass.getName());
-    }
+    String[] ARRAY_TYPE_TO_STRING = {
+        "T_BOOLEAN",
+        "T_CHAR",
+        "T_FLOAT",
+        "T_DOUBLE",
+        "T_BYTE",
+        "T_SHORT",
+        "T_INT",
+        "T_LONG",
+    };
 
-    static String toInternalName(final String binaryName) {
-        return binaryName.replace('.', '/');
-    }
-
-    static String getBinaryName(final ClassNode klass) {
-        return toBinaryName(klass.name);
-    }
-
-    static String toBinaryName(final String internalName) {
-        return internalName.replace('/', '.');
-    }
-
-    static String toDescriptor(final String name) {
-        return "L" + toInternalName(name) + ";";
-    }
+    Int2ReferenceOpenHashMap<String> FRAME_TYPE_TO_STRING = new Int2ReferenceOpenHashMap<>(
+        new int[]{-1, 0, 1, 2, 3, 4},
+        new String[]{"new", "full", "append", "chop", "same", "same1"},
+        1
+    );
 
     static void insertBeforeEveryReturn(final MethodNode in, final AbstractInsnNode instruction) {
         final InsnList box = new InsnList();
@@ -463,7 +510,7 @@ public interface Shortcode extends Opcodes {
     static MethodNode copyMethod(final ClassNode klass, final MethodNode method) {
         method.accept(klass);
 
-        return Shortcode.getFirstMethod(klass, method.name);
+        return Shortcode.getFirstDeclaredMethod(klass, method.name);
     }
 
     static InsnList copyInstructions(final InsnList instructions) {
@@ -474,7 +521,7 @@ public interface Shortcode extends Opcodes {
         AbstractInsnNode instruction = instructions.getFirst();
 
         while (instruction != null) {
-            storage.add(copyInstruction(instruction));
+            storage.add(clone(instruction));
 
             instruction = instruction.getNext();
         }
@@ -482,63 +529,87 @@ public interface Shortcode extends Opcodes {
         return storage;
     }
 
-    static <T extends AbstractInsnNode> T copyInstruction(final T instruction) {
-        if (instruction instanceof InsnNode) {
-            return (T) new InsnNode(instruction.getOpcode());
-        } else if (instruction instanceof VarInsnNode) {
-            return (T) new VarInsnNode(instruction.getOpcode(), ((VarInsnNode) instruction).var);
-        } else if (instruction instanceof FieldInsnNode) {
-            final FieldInsnNode fieldInstruction = (FieldInsnNode) instruction;
+    static List<? extends AbstractInsnNode> clone(final List<? extends AbstractInsnNode> instructions) {
+        final int length = instructions.size();
+        final ReferenceArrayList<AbstractInsnNode> clones = new ReferenceArrayList<>(length);
 
-            return (T) new FieldInsnNode(instruction.getOpcode(), fieldInstruction.owner, fieldInstruction.name, fieldInstruction.desc);
-        } else if (instruction instanceof MethodInsnNode) {
-            final MethodInsnNode methodInstruction = (MethodInsnNode) instruction;
+        for (int i = 0; i < length; i++) {
+            clones.add(clone(instructions.get(i)));
+        }
 
-            return (T) new MethodInsnNode(instruction.getOpcode(), methodInstruction.owner, methodInstruction.name, methodInstruction.desc, methodInstruction.itf);
-        } else if (instruction instanceof InvokeDynamicInsnNode) {
-            final InvokeDynamicInsnNode lambdaInstruction = (InvokeDynamicInsnNode) instruction;
+        return clones;
+    }
 
-            return (T) new InvokeDynamicInsnNode(lambdaInstruction.name, lambdaInstruction.desc, lambdaInstruction.bsm, lambdaInstruction.bsmArgs);
-        } else if (instruction instanceof TypeInsnNode) {
-            return (T) new TypeInsnNode(instruction.getOpcode(), ((TypeInsnNode) instruction).desc);
-        } else if (instruction instanceof MultiANewArrayInsnNode) {
-            final MultiANewArrayInsnNode arrayInstruction = (MultiANewArrayInsnNode) instruction;
+    static <T extends AbstractInsnNode> T[] clone(final T... instructions) {
+        final int length = instructions.length;
+        final T[] clones = (T[]) Array.newInstance(instructions.getClass().getComponentType(), length);
 
-            return (T) new MultiANewArrayInsnNode(arrayInstruction.desc, arrayInstruction.dims);
-        } else if (instruction instanceof LabelNode) {
-            return (T) new LabelNode(((LabelNode) instruction).getLabel());
-        } else if (instruction instanceof IntInsnNode) {
-            return (T) new IntInsnNode(instruction.getOpcode(), ((IntInsnNode) instruction).operand);
-        } else if (instruction instanceof LdcInsnNode) {
-            return (T) new LdcInsnNode(((LdcInsnNode) instruction).cst);
-        } else if (instruction instanceof FrameNode) {
-            final FrameNode frameNode = (FrameNode) instruction;
+        for (int i = 0; i < length; i++) {
+            clones[i] = clone(instructions[i]);
+        }
 
-            return (T) new FrameNode(frameNode.getOpcode(), frameNode.local.size(), frameNode.local.toArray(), frameNode.stack.size(), frameNode.stack.toArray());
-        } else if (instruction instanceof JumpInsnNode) {
-            return (T) new JumpInsnNode(instruction.getOpcode(), ((JumpInsnNode) instruction).label);
-        } else if (instruction instanceof IincInsnNode) {
-            final IincInsnNode incrementation = (IincInsnNode) instruction;
+        return clones;
+    }
 
-            return (T) new IincInsnNode(incrementation.var, incrementation.incr);
-        } else if (instruction instanceof LineNumberNode) {
-            final LineNumberNode lineNode = (LineNumberNode) instruction;
+    static <T extends AbstractInsnNode> T clone(final T instruction) {
+        switch (instruction.getType()) {
+            case AbstractInsnNode.INSN:
+                return (T) new InsnNode(instruction.getOpcode());
+            case AbstractInsnNode.INT_INSN:
+                return (T) new IntInsnNode(instruction.getOpcode(), ((IntInsnNode) instruction).operand);
+            case AbstractInsnNode.VAR_INSN:
+                return (T) new VarInsnNode(instruction.getOpcode(), ((VarInsnNode) instruction).var);
+            case AbstractInsnNode.TYPE_INSN:
+                return (T) new TypeInsnNode(instruction.getOpcode(), ((TypeInsnNode) instruction).desc);
+            case AbstractInsnNode.FIELD_INSN:
+                final FieldInsnNode fieldInstruction = (FieldInsnNode) instruction;
 
-            return (T) new LineNumberNode(lineNode.line, lineNode.start);
-        } else if (instruction instanceof LookupSwitchInsnNode) {
-            final LookupSwitchInsnNode lookupSwitchNode = (LookupSwitchInsnNode) instruction;
-            final Object[] keyObjects = lookupSwitchNode.keys.toArray();
-            final int[] keys = new int[keyObjects.length];
+                return (T) new FieldInsnNode(instruction.getOpcode(), fieldInstruction.owner, fieldInstruction.name, fieldInstruction.desc);
+            case AbstractInsnNode.METHOD_INSN:
+                final MethodInsnNode methodInstruction = (MethodInsnNode) instruction;
 
-            for (int i = 0; i < keyObjects.length; i++) {
-                keys[i] = (int) keyObjects[i];
-            }
+                return (T) new MethodInsnNode(instruction.getOpcode(), methodInstruction.owner, methodInstruction.name, methodInstruction.desc, methodInstruction.itf);
+            case AbstractInsnNode.INVOKE_DYNAMIC_INSN:
+                final InvokeDynamicInsnNode lambdaInstruction = (InvokeDynamicInsnNode) instruction;
+                final Object[] args = lambdaInstruction.bsmArgs;
 
-            return (T) new LookupSwitchInsnNode(lookupSwitchNode.dflt, keys, lookupSwitchNode.labels.toArray(new LabelNode[0]));
-        } else if (instruction instanceof TableSwitchInsnNode) {
-            final TableSwitchInsnNode tableSwitchNode = (TableSwitchInsnNode) instruction;
+                return (T) new InvokeDynamicInsnNode(lambdaInstruction.name, lambdaInstruction.desc, lambdaInstruction.bsm, Arrays.copyOf(args, args.length));
+            case AbstractInsnNode.JUMP_INSN:
+                return (T) new JumpInsnNode(instruction.getOpcode(), ((JumpInsnNode) instruction).label);
+            case AbstractInsnNode.LABEL:
+                return (T) new LabelNode(((LabelNode) instruction).getLabel());
+            case AbstractInsnNode.LDC_INSN:
+                return (T) new LdcInsnNode(((LdcInsnNode) instruction).cst);
+            case AbstractInsnNode.IINC_INSN:
+                final IincInsnNode incrementation = (IincInsnNode) instruction;
 
-            return (T) new TableSwitchInsnNode(tableSwitchNode.min, tableSwitchNode.max, tableSwitchNode.dflt, tableSwitchNode.labels.toArray(new LabelNode[0]));
+                return (T) new IincInsnNode(incrementation.var, incrementation.incr);
+            case AbstractInsnNode.TABLESWITCH_INSN:
+                final TableSwitchInsnNode tableSwitchNode = (TableSwitchInsnNode) instruction;
+
+                return (T) new TableSwitchInsnNode(tableSwitchNode.min, tableSwitchNode.max, clone(tableSwitchNode.dflt), clone(tableSwitchNode.labels).toArray(new LabelNode[0]));
+            case AbstractInsnNode.LOOKUPSWITCH_INSN:
+                final LookupSwitchInsnNode lookupSwitchNode = (LookupSwitchInsnNode) instruction;
+                final Object[] keyObjects = lookupSwitchNode.keys.toArray();
+                final int[] keys = new int[keyObjects.length];
+
+                for (int i = 0; i < keyObjects.length; i++) {
+                    keys[i] = (int) keyObjects[i];
+                }
+
+                return (T) new LookupSwitchInsnNode(clone(lookupSwitchNode.dflt), keys, clone(lookupSwitchNode.labels).toArray(new LabelNode[0]));
+            case AbstractInsnNode.MULTIANEWARRAY_INSN:
+                final MultiANewArrayInsnNode arrayInstruction = (MultiANewArrayInsnNode) instruction;
+
+                return (T) new MultiANewArrayInsnNode(arrayInstruction.desc, arrayInstruction.dims);
+            case AbstractInsnNode.FRAME:
+                final FrameNode frameNode = (FrameNode) instruction;
+
+                return (T) new FrameNode(frameNode.getOpcode(), frameNode.local.size(), frameNode.local.toArray(), frameNode.stack.size(), frameNode.stack.toArray());
+            case AbstractInsnNode.LINE:
+                final LineNumberNode lineNode = (LineNumberNode) instruction;
+
+                return (T) new LineNumberNode(lineNode.line, clone(lineNode.start));
         }
 
         throw new IllegalArgumentException(String.valueOf(instruction));
@@ -552,7 +623,7 @@ public interface Shortcode extends Opcodes {
             reader.accept(node, 0);
 
             return node;
-        } catch (IOException exception) {
+        } catch (final IOException exception) {
             throw new RuntimeException(exception);
         }
     }
@@ -565,7 +636,7 @@ public interface Shortcode extends Opcodes {
             reader.accept(klass, 0);
 
             return klass;
-        } catch (IOException exception) {
+        } catch (final IOException exception) {
             throw new RuntimeException(exception);
         }
     }
@@ -599,54 +670,79 @@ public interface Shortcode extends Opcodes {
     }
 
     static ReferenceArrayList<AbstractInsnNode> getInstructions(final ClassNode klass, final String method) {
-        return getInstructions(getFirstMethod(klass, method));
+        return getInstructions(getFirstDeclaredMethod(klass, method));
     }
 
     static ReferenceArrayList<AbstractInsnNode> getInstructions(final MethodNode method) {
         return new ReferenceArrayList<>(method.instructions.toArray());
     }
 
-    static MethodNode getFirstInheritedMethod(ClassNode klass, final String name) {
-        MethodNode first = null;
-
-        outer:
-        while (true) {
-            for (final MethodNode method : klass.methods) {
-                if (name.equals(method.name)) {
-                    first = method;
-                    break outer;
-                }
-            }
-
-            if (klass.superName != null) {
-                try {
-                    final ClassReader reader = new ClassReader(klass.superName);
-
-                    klass = new ClassNode();
-
-                    reader.accept(klass, 0);
-                } catch (final IOException exception) {
-                    throw new RuntimeException(exception);
-                }
-            } else {
-                break;
-            }
-        }
-
-        return first;
-    }
-
-    static MethodNode getFirstMethod(final ClassNode klass, final String name) {
-        MethodNode first = null;
-
+    static MethodNode tryGetFirstMethod(ClassNode klass, final String name) {
         for (final MethodNode method : klass.methods) {
             if (name.equals(method.name)) {
-                first = method;
-                break;
+                return method;
             }
         }
 
-        return first;
+        if (klass.superName != null) {
+            try {
+                final ClassReader reader = new ClassReader(klass.superName);
+
+                klass = new ClassNode();
+
+                reader.accept(klass, 0);
+
+                return tryGetFirstMethod(klass, name);
+            } catch (final IOException exception) {
+                throw new RuntimeException(exception);
+            }
+        }
+
+        return null;
+    }
+
+    static MethodNode getFirstMethod(ClassNode klass, final String name) {
+        for (final MethodNode method : klass.methods) {
+            if (name.equals(method.name)) {
+                return method;
+            }
+        }
+
+        if (klass.superName != null) {
+            try {
+                final ClassReader reader = new ClassReader(klass.superName);
+
+                klass = new ClassNode();
+
+                reader.accept(klass, 0);
+
+                return getFirstMethod(klass, name);
+            } catch (final IOException exception) {
+                throw new RuntimeException(exception);
+            }
+        }
+
+        throw new IllegalArgumentException(String.format("the given ClassNode does not contain method %s", name));
+    }
+
+    static MethodNode tryGetFirstDeclaredMethod(final ClassNode klass, final String name) {
+        for (final MethodNode method : klass.methods) {
+            if (name.equals(method.name)) {
+                return method;
+            }
+        }
+
+        return null;
+    }
+
+    static MethodNode getFirstDeclaredMethod(final ClassNode klass, final String name) {
+        for (final MethodNode method : klass.methods) {
+            if (name.equals(method.name)) {
+                return method;
+            }
+        }
+
+        throw new IllegalArgumentException(String.format("the given ClassNode does not contain method %s", name));
     }
 
     static ReferenceArrayList<MethodNode> getAllMethods(ClassNode klass) {
@@ -980,5 +1076,312 @@ public interface Shortcode extends Opcodes {
             default:
                 return false;
         }
+    }
+
+    static void findBackward(final ListIterator<AbstractInsnNode> iterator, final Predicate<AbstractInsnNode> condition, final Runnable whenFound) {
+        AbstractInsnNode instruction;
+
+        while (iterator.hasPrevious()) {
+            instruction = iterator.previous();
+
+            if (condition.test(instruction)) {
+                whenFound.run();
+
+                return;
+            }
+        }
+
+        throw new IllegalArgumentException("the specified predicate failed to apply");
+    }
+
+    static void findBackward(final ListIterator<AbstractInsnNode> iterator, final Predicate<AbstractInsnNode> condition, final Runnable whenFound, final Runnable alternative) {
+        AbstractInsnNode instruction;
+
+        while (iterator.hasPrevious()) {
+            instruction = iterator.previous();
+
+            if (condition.test(instruction)) {
+                whenFound.run();
+
+                return;
+            }
+        }
+
+        alternative.run();
+    }
+
+    static void findBackward(final ListIterator<AbstractInsnNode> iterator, final Predicate<AbstractInsnNode> condition, final Consumer<AbstractInsnNode> whenFound) {
+        AbstractInsnNode instruction;
+
+        while (iterator.hasPrevious()) {
+            instruction = iterator.previous();
+
+            if (condition.test(instruction)) {
+                whenFound.accept(instruction);
+
+                return;
+            }
+        }
+    }
+
+    static <T> T findBackward(final ListIterator<AbstractInsnNode> iterator, final Predicate<AbstractInsnNode> condition, final Function<AbstractInsnNode, T> whenFound) {
+        AbstractInsnNode instruction;
+
+        while (iterator.hasPrevious()) {
+            instruction = iterator.previous();
+
+            if (condition.test(instruction)) {
+                return whenFound.apply(instruction);
+            }
+        }
+
+        throw new IllegalArgumentException("the specified predicate failed to apply");
+    }
+
+    static void findBackward(final ListIterator<AbstractInsnNode> iterator, final Predicate<AbstractInsnNode> condition, final Consumer<AbstractInsnNode> whenFound, final Runnable alternative) {
+        AbstractInsnNode instruction;
+
+        while (iterator.hasPrevious()) {
+            instruction = iterator.previous();
+
+            if (condition.test(instruction)) {
+                whenFound.accept(instruction);
+
+                return;
+            }
+        }
+
+        alternative.run();
+    }
+
+    static void findForward(final Iterator<AbstractInsnNode> iterator, final Predicate<AbstractInsnNode> condition, final Runnable whenFound) {
+        AbstractInsnNode instruction;
+
+        while (iterator.hasNext()) {
+            instruction = iterator.next();
+
+            if (condition.test(instruction)) {
+                whenFound.run();
+
+                return;
+            }
+        }
+
+        throw new IllegalArgumentException("the specified predicate failed to apply");
+    }
+
+    static void findForward(final Iterator<AbstractInsnNode> iterator, final Predicate<AbstractInsnNode> condition, final Runnable whenFound, final Runnable alternative) {
+        AbstractInsnNode instruction;
+
+        while (iterator.hasNext()) {
+            instruction = iterator.next();
+
+            if (condition.test(instruction)) {
+                whenFound.run();
+
+                return;
+            }
+        }
+
+        alternative.run();
+    }
+
+    static void findForward(final Iterator<AbstractInsnNode> iterator, final Predicate<AbstractInsnNode> condition, final Consumer<AbstractInsnNode> whenFound) {
+        AbstractInsnNode instruction;
+
+        while (iterator.hasNext()) {
+            instruction = iterator.next();
+
+            if (condition.test(instruction)) {
+                whenFound.accept(instruction);
+
+                return;
+            }
+        }
+    }
+
+    static <T> T findForward(final Iterator<AbstractInsnNode> iterator, final Predicate<AbstractInsnNode> condition, final Function<AbstractInsnNode, T> whenFound) {
+        AbstractInsnNode instruction;
+
+        while (iterator.hasNext()) {
+            instruction = iterator.next();
+
+            if (condition.test(instruction)) {
+                return whenFound.apply(instruction);
+            }
+        }
+
+        throw new IllegalArgumentException("the specified predicate failed to apply");
+    }
+
+    static void findForward(final Iterator<AbstractInsnNode> iterator, final Predicate<AbstractInsnNode> condition, final Consumer<AbstractInsnNode> whenFound, final Runnable alternative) {
+        AbstractInsnNode instruction;
+
+        while (iterator.hasNext()) {
+            instruction = iterator.next();
+
+            if (condition.test(instruction)) {
+                whenFound.accept(instruction);
+
+                return;
+            }
+        }
+
+        alternative.run();
+    }
+
+    /**
+     * remove instructions between the bounds specified by <b>{@code from}</b> and <b>{@code to}</b>
+     *
+     * @param iterator an iterator of the instruction list wherein to remove instructions
+     * @param from the {@linkplain AbstractInsnNode#getType() type} of the lower bound (inclusive) of the area to remove
+     * @param to the {@linkplain AbstractInsnNode#getType() type} of the upper bound (exclusive) of the area to remove
+     */
+    static void removeBetween(final ListIterator<AbstractInsnNode> iterator, final int from, final int to) {
+        while (iterator.previous().getType() != from) {
+            iterator.remove();
+        }
+
+        iterator.remove();
+
+        while (iterator.next().getType() != to) {
+            iterator.remove();
+        }
+    }
+
+    /**
+     * remove instructions between the bounds specified by <b>{@code from}</b> and <b>{@code to}</b>
+     *
+     * @param iterator an iterator of the instruction list wherein to remove instructions
+     * @param from a predicate matching the lower bound (inclusive) of the area to remove
+     * @param to a predicate matching the upper bound (exclusive) of the area to remove
+     */
+    static void removeBetween(final ListIterator<AbstractInsnNode> iterator, final Predicate<AbstractInsnNode> from, final Predicate<AbstractInsnNode> to) {
+        AbstractInsnNode instruction = iterator.previous();
+
+        while (!from.test(instruction)) {
+            iterator.remove();
+
+            instruction = iterator.previous();
+        }
+
+        iterator.remove();
+
+        instruction = iterator.next();
+
+        while (!to.test(instruction)) {
+            iterator.remove();
+
+            instruction = iterator.next();
+        }
+    }
+
+    /**
+     * remove instructions between the bounds specified by <b>{@code from}</b> and <b>{@code to}</b> inclusively
+     *
+     * @param iterator an iterator of the instruction list wherein to remove instructions
+     * @param from the {@linkplain AbstractInsnNode#getType() type} of the lower bound (inclusive) of the area to remove
+     * @param to the {@linkplain AbstractInsnNode#getType() type} of the upper bound (inclusive) of the area to remove
+     */
+    static void removeBetweenInclusive(final ListIterator<AbstractInsnNode> iterator, final int from, final int to) {
+        while (iterator.previous().getType() != from) {
+            iterator.remove();
+        }
+
+        iterator.remove();
+
+        while (iterator.next().getType() != to) {
+            iterator.remove();
+        }
+
+        iterator.remove();
+    }
+
+    /**
+     * remove instructions between the bounds specified by <b>{@code from}</b> and <b>{@code to}</b> inclusively
+     *
+     * @param iterator an iterator of the instruction list wherein to remove instructions
+     * @param from a predicate matching the lower bound (inclusive) of the area to remove
+     * @param to a predicate matching the upper bound (inclusive) of the area to remove
+     */
+    static void removeBetweenInclusive(final ListIterator<AbstractInsnNode> iterator, final Predicate<AbstractInsnNode> from, final Predicate<AbstractInsnNode> to) {
+        AbstractInsnNode instruction = iterator.previous();
+
+        while (!from.test(instruction)) {
+            iterator.remove();
+
+            instruction = iterator.previous();
+        }
+
+        iterator.remove();
+
+        instruction = iterator.next();
+
+        while (!to.test(instruction)) {
+            iterator.remove();
+
+            instruction = iterator.next();
+        }
+
+        iterator.remove();
+    }
+
+    /**
+     * remove instructions between the bounds specified by <b>{@code from}</b> and <b>{@code to}</b> exclusively
+     *
+     * @param iterator an iterator of the instruction list wherein to remove instructions
+     * @param from the {@linkplain AbstractInsnNode#getType() type} of the lower bound (exclusive) of the area to remove
+     * @param to the {@linkplain AbstractInsnNode#getType() type} of the upper bound (exclusive) of the area to remove
+     */
+    static void removeBetweenExclusive(final ListIterator<AbstractInsnNode> iterator, final int from, final int to) {
+        while (iterator.previous().getType() != from) {
+            iterator.remove();
+        }
+        
+        iterator.next();
+
+        while (iterator.next().getType() != to) {
+            iterator.remove();
+        }
+    }
+
+    /**
+     * remove instructions between the bounds specified by <b>{@code from}</b> and <b>{@code to}</b> exclusively
+     *
+     * @param iterator an iterator of the instruction list wherein to remove instructions
+     * @param from a predicate matching the lower bound (exclusive) of the area to remove
+     * @param to a predicate matching the upper bound (exclusive) of the area to remove
+     */
+    static void removeBetweenExclusive(final ListIterator<AbstractInsnNode> iterator, final Predicate<AbstractInsnNode> from, final Predicate<AbstractInsnNode> to) {
+        AbstractInsnNode instruction = iterator.previous();
+
+        while (!from.test(instruction)) {
+            iterator.remove();
+
+            instruction = iterator.previous();
+        }
+
+        iterator.next();
+
+        instruction = iterator.next();
+
+        while (!to.test(instruction)) {
+            iterator.remove();
+
+            instruction = iterator.next();
+        }
+    }
+
+    static ReferenceArrayList<AbstractInsnNode> getInstructions(final InsnList instructions) {
+        final ReferenceArrayList<AbstractInsnNode> list = new ReferenceArrayList<>();
+        AbstractInsnNode instruction = instructions.getFirst();
+
+        while (instruction != null) {
+            list.add(instruction);
+
+            instruction = instruction.getNext();
+        }
+
+        return list;
     }
 }
