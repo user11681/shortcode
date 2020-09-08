@@ -12,10 +12,10 @@ repositories {
 }
 
 dependencies {
-    compileOnly "it.unimi.dsi:fastutil:+"
-    compileOnly "org.apache.logging.log4j:log4j-core:+"
-    compileOnly "org.ow2.asm:asm:9.0-SNAPSHOT"
-    compileOnly "org.ow2.asm:asm-tree:9.0-SNAPSHOT"
+    implementation "it.unimi.dsi:fastutil:+"
+    implementation "org.apache.logging.log4j:log4j-core:+"
+    implementation "org.ow2.asm:asm:9.0-SNAPSHOT"
+    implementation "org.ow2.asm:asm-tree:9.0-SNAPSHOT"
 
     testImplementation "org.junit.jupiter:junit-jupiter:+"
 }
