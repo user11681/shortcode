@@ -9,12 +9,15 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
+import org.objectweb.asm.TypePath;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
@@ -29,12 +32,14 @@ import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.LineNumberNode;
+import org.objectweb.asm.tree.LocalVariableAnnotationNode;
 import org.objectweb.asm.tree.LocalVariableNode;
 import org.objectweb.asm.tree.LookupSwitchInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.MultiANewArrayInsnNode;
 import org.objectweb.asm.tree.TableSwitchInsnNode;
+import org.objectweb.asm.tree.TypeAnnotationNode;
 import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
@@ -42,6 +47,10 @@ import org.objectweb.asm.tree.VarInsnNode;
 public interface Shortcode extends Opcodes {
     int ABSTRACT_ALL = ACC_NATIVE | ACC_ABSTRACT;
     int NA = 0;
+    int ANNOTATION_VISITOR = 0;
+    int ANNOTATION_NODE = 1;
+    int TYPE_ANNOTATION_NODE = 2;
+    int LOCAL_VARIABLE_ANNOTATION_NODE = 3;
 
     int[] DELTA_STACK_SIZE = {
         0,
@@ -465,8 +474,33 @@ public interface Shortcode extends Opcodes {
     Int2ReferenceOpenHashMap<String> FRAME_TYPE_TO_STRING = new Int2ReferenceOpenHashMap<>(
         new int[]{-1, 0, 1, 2, 3, 4},
         new String[]{"new", "full", "append", "chop", "same", "same1"},
-        1
+        0.75F
     );
+
+    ClassToIntMap CLASS_TO_INT = new ClassToIntMap(
+        new Class[]{AnnotationVisitor.class, AnnotationNode.class, TypeAnnotationNode.class, LocalVariableAnnotationNode.class},
+        new int[]{ANNOTATION_VISITOR, ANNOTATION_NODE, TYPE_ANNOTATION_NODE, LOCAL_VARIABLE_ANNOTATION_NODE}
+    );
+
+    static String getInternalName(final Class<?> klass) {
+        return toInternalName(klass.getName());
+    }
+
+    static String toInternalName(final String binaryName) {
+        return binaryName.replace('.', '/');
+    }
+
+    static String getBinaryName(final ClassNode klass) {
+        return toBinaryName(klass.name);
+    }
+
+    static String toBinaryName(final String internalName) {
+        return internalName.replace('/', '.');
+    }
+
+    static String toDescriptor(final String name) {
+        return "L" + toInternalName(name) + ";";
+    }
 
     static void insertBeforeEveryReturn(final MethodNode in, final AbstractInsnNode instruction) {
         final InsnList box = new InsnList();
@@ -1234,8 +1268,8 @@ public interface Shortcode extends Opcodes {
      * remove instructions between the bounds specified by <b>{@code from}</b> and <b>{@code to}</b>
      *
      * @param iterator an iterator of the instruction list wherein to remove instructions
-     * @param from the {@linkplain AbstractInsnNode#getType() type} of the lower bound (inclusive) of the area to remove
-     * @param to the {@linkplain AbstractInsnNode#getType() type} of the upper bound (exclusive) of the area to remove
+     * @param from     the {@linkplain AbstractInsnNode#getType() type} of the lower bound (inclusive) of the area to remove
+     * @param to       the {@linkplain AbstractInsnNode#getType() type} of the upper bound (exclusive) of the area to remove
      */
     static void removeBetween(final ListIterator<AbstractInsnNode> iterator, final int from, final int to) {
         while (iterator.previous().getType() != from) {
@@ -1253,8 +1287,8 @@ public interface Shortcode extends Opcodes {
      * remove instructions between the bounds specified by <b>{@code from}</b> and <b>{@code to}</b>
      *
      * @param iterator an iterator of the instruction list wherein to remove instructions
-     * @param from a predicate matching the lower bound (inclusive) of the area to remove
-     * @param to a predicate matching the upper bound (exclusive) of the area to remove
+     * @param from     a predicate matching the lower bound (inclusive) of the area to remove
+     * @param to       a predicate matching the upper bound (exclusive) of the area to remove
      */
     static void removeBetween(final ListIterator<AbstractInsnNode> iterator, final Predicate<AbstractInsnNode> from, final Predicate<AbstractInsnNode> to) {
         AbstractInsnNode instruction = iterator.previous();
@@ -1280,8 +1314,8 @@ public interface Shortcode extends Opcodes {
      * remove instructions between the bounds specified by <b>{@code from}</b> and <b>{@code to}</b> inclusively
      *
      * @param iterator an iterator of the instruction list wherein to remove instructions
-     * @param from the {@linkplain AbstractInsnNode#getType() type} of the lower bound (inclusive) of the area to remove
-     * @param to the {@linkplain AbstractInsnNode#getType() type} of the upper bound (inclusive) of the area to remove
+     * @param from     the {@linkplain AbstractInsnNode#getType() type} of the lower bound (inclusive) of the area to remove
+     * @param to       the {@linkplain AbstractInsnNode#getType() type} of the upper bound (inclusive) of the area to remove
      */
     static void removeBetweenInclusive(final ListIterator<AbstractInsnNode> iterator, final int from, final int to) {
         while (iterator.previous().getType() != from) {
@@ -1301,8 +1335,8 @@ public interface Shortcode extends Opcodes {
      * remove instructions between the bounds specified by <b>{@code from}</b> and <b>{@code to}</b> inclusively
      *
      * @param iterator an iterator of the instruction list wherein to remove instructions
-     * @param from a predicate matching the lower bound (inclusive) of the area to remove
-     * @param to a predicate matching the upper bound (inclusive) of the area to remove
+     * @param from     a predicate matching the lower bound (inclusive) of the area to remove
+     * @param to       a predicate matching the upper bound (inclusive) of the area to remove
      */
     static void removeBetweenInclusive(final ListIterator<AbstractInsnNode> iterator, final Predicate<AbstractInsnNode> from, final Predicate<AbstractInsnNode> to) {
         AbstractInsnNode instruction = iterator.previous();
@@ -1330,14 +1364,14 @@ public interface Shortcode extends Opcodes {
      * remove instructions between the bounds specified by <b>{@code from}</b> and <b>{@code to}</b> exclusively
      *
      * @param iterator an iterator of the instruction list wherein to remove instructions
-     * @param from the {@linkplain AbstractInsnNode#getType() type} of the lower bound (exclusive) of the area to remove
-     * @param to the {@linkplain AbstractInsnNode#getType() type} of the upper bound (exclusive) of the area to remove
+     * @param from     the {@linkplain AbstractInsnNode#getType() type} of the lower bound (exclusive) of the area to remove
+     * @param to       the {@linkplain AbstractInsnNode#getType() type} of the upper bound (exclusive) of the area to remove
      */
     static void removeBetweenExclusive(final ListIterator<AbstractInsnNode> iterator, final int from, final int to) {
         while (iterator.previous().getType() != from) {
             iterator.remove();
         }
-        
+
         iterator.next();
 
         while (iterator.next().getType() != to) {
@@ -1349,8 +1383,8 @@ public interface Shortcode extends Opcodes {
      * remove instructions between the bounds specified by <b>{@code from}</b> and <b>{@code to}</b> exclusively
      *
      * @param iterator an iterator of the instruction list wherein to remove instructions
-     * @param from a predicate matching the lower bound (exclusive) of the area to remove
-     * @param to a predicate matching the upper bound (exclusive) of the area to remove
+     * @param from     a predicate matching the lower bound (exclusive) of the area to remove
+     * @param to       a predicate matching the upper bound (exclusive) of the area to remove
      */
     static void removeBetweenExclusive(final ListIterator<AbstractInsnNode> iterator, final Predicate<AbstractInsnNode> from, final Predicate<AbstractInsnNode> to) {
         AbstractInsnNode instruction = iterator.previous();
@@ -1383,5 +1417,346 @@ public interface Shortcode extends Opcodes {
         }
 
         return list;
+    }
+
+    static boolean equals(final Object object, final Object other) {
+        if (object == other) {
+            return true;
+        }
+
+        if (object == null) {
+            return false;
+        }
+
+        if (object instanceof Object[] && other instanceof Object[]) {
+            return equals((Object[]) object, (Object[]) other);
+        }
+
+        if (object instanceof List && other instanceof List) {
+            return equals((List<?>) object, (List<?>) other);
+        }
+
+        if (object instanceof AbstractInsnNode && other instanceof AbstractInsnNode) {
+            return equals((AbstractInsnNode) object, (AbstractInsnNode) other);
+        }
+
+        if (object instanceof AnnotationVisitor) {
+            return equals((AnnotationVisitor) object, (AnnotationVisitor) other);
+        }
+
+        return Objects.equals(object, other);
+    }
+
+    static boolean equals(final Object[] array, final Object[] other) {
+        if (array == other) {
+            return true;
+        }
+
+        if (array == null) {
+            return false;
+        }
+
+        final int length = array.length;
+
+        if (length != other.length) {
+            return false;
+        }
+
+        for (int i = 0; i < length; i++) {
+            if (!equals(array[i], other[i])) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    static boolean equals(final List<?> list, final List<?> other) {
+        if (list == other) {
+            return true;
+        }
+
+        if (list == null) {
+            return false;
+        }
+
+        final int size = list.size();
+
+        if (size != other.size()) {
+            return false;
+        }
+
+        for (int i = 0; i != size; i++) {
+            if (!equals(list.get(i), other.get(i))) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    static boolean equalsTypeAnnotations(final List<TypeAnnotationNode> annotations, final List<TypeAnnotationNode> other) {
+        if (annotations == other) {
+            return true;
+        }
+
+        if (annotations == null) {
+            return false;
+        }
+
+        final int size = annotations.size();
+
+        if (size != other.size()) {
+            return false;
+        }
+
+        for (int i = 0; i != size; i++) {
+            if (!equals(annotations.get(i), other.get(i))) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    static boolean equals(final InsnList instructions, final InsnList otherInstructions) {
+        return equals(instructions, otherInstructions, false);
+    }
+
+    static boolean equals(final InsnList instructions, final InsnList otherInstructions, final boolean compareAnnotations) {
+        if (instructions == otherInstructions) {
+            return true;
+        }
+
+        if (instructions == null) {
+            return false;
+        }
+
+        final int size = instructions.size();
+
+        if (size != otherInstructions.size()) {
+            return false;
+        }
+
+        AbstractInsnNode instruction = instructions.getFirst();
+        AbstractInsnNode otherInstruction = otherInstructions.getFirst();
+
+        while (instruction != null) {
+            if (!equals(instruction, otherInstruction, compareAnnotations)) {
+                return false;
+            }
+
+            instruction = instruction.getNext();
+            otherInstruction = otherInstruction.getNext();
+        }
+
+        return true;
+    }
+
+    static boolean equals(final AbstractInsnNode instruction, final AbstractInsnNode other) {
+        return equals(instruction, other, false);
+    }
+
+    static boolean equals(final AbstractInsnNode instruction, final AbstractInsnNode other, final boolean compareAnnotations) {
+        if (instruction == other) {
+            return true;
+        }
+
+        if (instruction == null) {
+            return false;
+        }
+
+        final int opcode = instruction.getOpcode();
+        final int otherOpcode = other.getOpcode();
+
+        if (opcode != otherOpcode) {
+            return false;
+        }
+
+        if (instruction.getType() == other.getType()) {
+            if (compareAnnotations
+                && (!equalsTypeAnnotations(instruction.invisibleTypeAnnotations, other.visibleTypeAnnotations)
+                || !equalsTypeAnnotations(instruction.invisibleTypeAnnotations, other.visibleTypeAnnotations))) {
+                return false;
+            }
+
+            switch (instruction.getType()) {
+                case AbstractInsnNode.INSN:
+                case AbstractInsnNode.LABEL:
+                    return false;
+                case AbstractInsnNode.INT_INSN:
+                    return ((IntInsnNode) instruction).operand == ((IntInsnNode) other).operand;
+                case AbstractInsnNode.VAR_INSN:
+                    return ((VarInsnNode) instruction).var == ((VarInsnNode) other).var;
+                case AbstractInsnNode.TYPE_INSN:
+                    return Objects.equals(((TypeInsnNode) instruction).desc, ((TypeInsnNode) other).desc);
+                case AbstractInsnNode.FIELD_INSN:
+                    final FieldInsnNode fieldInstruction = (FieldInsnNode) instruction;
+                    final FieldInsnNode otherFieldInstruction = (FieldInsnNode) other;
+
+                    return Objects.equals(fieldInstruction.name, otherFieldInstruction.name)
+                        && Objects.equals(fieldInstruction.desc, otherFieldInstruction.desc)
+                        && Objects.equals(fieldInstruction.owner, otherFieldInstruction.owner);
+                case AbstractInsnNode.METHOD_INSN:
+                    final MethodInsnNode methodInstruction = (MethodInsnNode) instruction;
+                    final MethodInsnNode otherMethodInstruction = (MethodInsnNode) other;
+
+                    return Objects.equals(methodInstruction.name, otherMethodInstruction.name)
+                        && Objects.equals(methodInstruction.owner, otherMethodInstruction.owner)
+                        && Objects.equals(methodInstruction.desc, otherMethodInstruction.desc)
+                        && methodInstruction.itf == otherMethodInstruction.itf;
+                case AbstractInsnNode.INVOKE_DYNAMIC_INSN:
+                    final InvokeDynamicInsnNode invokeDynamicInstruction = (InvokeDynamicInsnNode) instruction;
+                    final InvokeDynamicInsnNode otherInvokeDynamicInstruction = (InvokeDynamicInsnNode) other;
+
+                    return Objects.equals(invokeDynamicInstruction.name, otherInvokeDynamicInstruction.name)
+                        && Objects.equals(invokeDynamicInstruction.desc, otherInvokeDynamicInstruction.desc)
+                        && equals(invokeDynamicInstruction.bsmArgs, otherInvokeDynamicInstruction.bsmArgs);
+                case AbstractInsnNode.JUMP_INSN:
+                    return ((JumpInsnNode) instruction).label.getLabel() == ((JumpInsnNode) other).label.getLabel();
+                case AbstractInsnNode.LDC_INSN:
+                    return Objects.equals(((LdcInsnNode) instruction).cst, ((LdcInsnNode) other).cst);
+                case AbstractInsnNode.IINC_INSN:
+                    final IincInsnNode iIncInstruction = (IincInsnNode) instruction;
+                    final IincInsnNode otherIIncInstruction = (IincInsnNode) other;
+
+                    return iIncInstruction.var == otherIIncInstruction.var && iIncInstruction.incr == otherIIncInstruction.incr;
+                case AbstractInsnNode.TABLESWITCH_INSN: {
+                    final TableSwitchInsnNode tableSwitchInstruction = (TableSwitchInsnNode) instruction;
+                    final TableSwitchInsnNode otherTableSwitchInstruction = (TableSwitchInsnNode) other;
+
+                    if (!(tableSwitchInstruction.min == otherTableSwitchInstruction.min
+                        && tableSwitchInstruction.max == otherTableSwitchInstruction.max
+                        && tableSwitchInstruction.dflt.getLabel() == otherTableSwitchInstruction.dflt.getLabel())) {
+                        return false;
+                    }
+
+                    final List<LabelNode> labels = tableSwitchInstruction.labels;
+                    final List<LabelNode> otherLabels = otherTableSwitchInstruction.labels;
+
+                    final int size = labels.size();
+
+                    if (size != otherLabels.size()) {
+                        return false;
+                    }
+
+                    for (int i = 0; i != size; i++) {
+                        if (labels.get(i) != otherLabels.get(i)) {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                }
+                case AbstractInsnNode.LOOKUPSWITCH_INSN: {
+                    final LookupSwitchInsnNode lookupSwitchInstruction = (LookupSwitchInsnNode) instruction;
+                    final LookupSwitchInsnNode otherLookupSwitchInstruction = (LookupSwitchInsnNode) other;
+
+                    if (!(lookupSwitchInstruction.dflt.getLabel() == otherLookupSwitchInstruction.dflt.getLabel())) {
+                        return false;
+                    }
+
+                    if (!lookupSwitchInstruction.keys.equals(otherLookupSwitchInstruction.keys)) {
+                        return false;
+                    }
+
+                    final List<LabelNode> labels = lookupSwitchInstruction.labels;
+                    final List<LabelNode> otherLabels = otherLookupSwitchInstruction.labels;
+
+                    final int size = labels.size();
+
+                    if (size != otherLabels.size()) {
+                        return false;
+                    }
+
+                    for (int i = 0; i != size; i++) {
+                        if (labels.get(i) != otherLabels.get(i)) {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                }
+                case AbstractInsnNode.MULTIANEWARRAY_INSN:
+                    final MultiANewArrayInsnNode multiANewArrayInstruction = (MultiANewArrayInsnNode) instruction;
+                    final MultiANewArrayInsnNode otherMultiANewArrayInstruction = (MultiANewArrayInsnNode) other;
+
+                    return multiANewArrayInstruction.desc.equals(otherMultiANewArrayInstruction.desc);
+                case AbstractInsnNode.FRAME:
+                    final FrameNode frame = (FrameNode) instruction;
+                    final FrameNode otherFrame = (FrameNode) other;
+
+                    return frame.type == otherFrame.type && frame.stack.equals(otherFrame.stack) && frame.local.equals(otherFrame.stack);
+                case AbstractInsnNode.LINE:
+                    final LineNumberNode line = (LineNumberNode) instruction;
+                    final LineNumberNode otherLine = (LineNumberNode) other;
+
+                    return line.line == otherLine.line && line.start.getLabel() == otherLine.start.getLabel();
+            }
+        }
+
+        return false;
+    }
+
+    static boolean equals(final LocalVariableAnnotationNode annotation, final LocalVariableAnnotationNode other) {
+        return equals((TypeAnnotationNode) annotation, other) && Objects.equals(annotation.start, other.start) && Objects.equals(annotation.end, other.end) && Objects.equals(annotation.index, other.index);
+    }
+
+    static boolean equals(final TypeAnnotationNode annotation, final TypeAnnotationNode other) {
+        if (annotation.typeRef != other.typeRef) {
+            return false;
+        }
+
+        final TypePath path = annotation.typePath;
+        final TypePath otherPath = other.typePath;
+
+        if (path != null && otherPath != null) {
+            final int length = path.getLength();
+
+            if (length != otherPath.getLength()) {
+                return false;
+            }
+
+            for (int i = 0; i != length; i++) {
+                if (path.getStep(i) != otherPath.getStep(i)) {
+                    return false;
+                }
+            }
+        }
+
+        return equals((AnnotationNode) annotation, other);
+    }
+
+    static boolean equals(final AnnotationNode annotation, final AnnotationNode other) {
+        return Objects.equals(annotation.desc, other.desc) && equals(annotation.values, other.values);
+    }
+
+    static boolean equals(final AnnotationVisitor annotation, final AnnotationVisitor other) {
+        if (annotation == other) {
+            return true;
+        }
+
+        if (annotation == null) {
+            return false;
+        }
+
+        final Class<? extends AnnotationVisitor> klass = annotation.getClass();
+
+        if (klass != other.getClass()) {
+            return false;
+        }
+
+        switch (CLASS_TO_INT.getInt(klass)) {
+            case ANNOTATION_VISITOR:
+                return true;
+            case ANNOTATION_NODE:
+                return equals((AnnotationNode) annotation, (AnnotationNode) other);
+            case TYPE_ANNOTATION_NODE:
+                return equals((TypeAnnotationNode) annotation, (TypeAnnotationNode) other);
+            case LOCAL_VARIABLE_ANNOTATION_NODE:
+                return equals((LocalVariableAnnotationNode) annotation, (LocalVariableAnnotationNode) other);
+            default:
+                return annotation.equals(other);
+        }
     }
 }
