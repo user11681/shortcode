@@ -1188,6 +1188,82 @@ public interface Shortcode extends Opcodes {
         alternative.run();
     }
 
+    static void findForward(final Iterator<AbstractInsnNode> iterator, final AbstractInsnNode condition, final Runnable whenFound) {
+        AbstractInsnNode instruction;
+
+        while (iterator.hasNext()) {
+            instruction = iterator.next();
+
+            if (equals(condition, instruction)) {
+                whenFound.run();
+
+                return;
+            }
+        }
+
+        throw new IllegalArgumentException("the specified predicate failed to apply");
+    }
+
+    static void findForward(final Iterator<AbstractInsnNode> iterator, final AbstractInsnNode condition, final Runnable whenFound, final Runnable alternative) {
+        AbstractInsnNode instruction;
+
+        while (iterator.hasNext()) {
+            instruction = iterator.next();
+
+            if (equals(condition, instruction)) {
+                whenFound.run();
+
+                return;
+            }
+        }
+
+        alternative.run();
+    }
+
+    static void findForward(final Iterator<AbstractInsnNode> iterator, final AbstractInsnNode condition, final Consumer<AbstractInsnNode> whenFound) {
+        AbstractInsnNode instruction;
+
+        while (iterator.hasNext()) {
+            instruction = iterator.next();
+
+            if (equals(condition, instruction)) {
+                whenFound.accept(instruction);
+
+                return;
+            }
+        }
+    }
+
+    static <T> T findForward(final Iterator<AbstractInsnNode> iterator, final AbstractInsnNode condition, final Function<AbstractInsnNode, T> whenFound) {
+        AbstractInsnNode instruction;
+
+        while (iterator.hasNext()) {
+            instruction = iterator.next();
+
+            if (equals(condition, instruction)) {
+                return whenFound.apply(instruction);
+            }
+        }
+
+        throw new IllegalArgumentException("the specified predicate failed to apply");
+    }
+
+    static void findForward(final Iterator<AbstractInsnNode> iterator, final AbstractInsnNode condition, final Consumer<AbstractInsnNode> whenFound, final Runnable alternative) {
+        AbstractInsnNode instruction;
+
+        while (iterator.hasNext()) {
+            instruction = iterator.next();
+
+            if (equals(condition, instruction)) {
+                whenFound.accept(instruction);
+
+                return;
+            }
+        }
+
+        alternative.run();
+    }
+
     static void findForward(final Iterator<AbstractInsnNode> iterator, final Predicate<AbstractInsnNode> condition, final Runnable whenFound) {
         AbstractInsnNode instruction;
 
