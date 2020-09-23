@@ -1,14 +1,21 @@
 plugins {
-    id "java"
-    id "maven"
+    id("java")
+    id("java-library")
+    id("maven")
+    id("maven-publish")
+    id("com.jfrog.bintray") version("1.8.5")
 }
 
-repositories {
-    jcenter()
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
 
-    maven {
-        url "https://repository.ow2.org/nexus/content/repositories/snapshots"
-    }
+project.group = "user11681"
+project.version = "0.0.0"
+
+repositories {
+    mavenCentral()
+
+    maven {url = "https://repository.ow2.org/nexus/content/repositories/snapshots"}
 }
 
 dependencies {
@@ -18,4 +25,48 @@ dependencies {
     implementation "org.ow2.asm:asm-tree:9.0-SNAPSHOT"
 
     testImplementation "org.junit.jupiter:junit-jupiter:+"
+}
+
+bintray {
+    user = System.getenv("BINTRAY_USER")
+    key = System.getenv("BINTRAY_API_KEY")
+    publications = ["bintray"]
+    publish = true
+
+    pkg {
+        repo = "maven"
+        name = project.name
+        licenses = ["LGPL-3.0"]
+        vcsUrl = "https://github.com/user11681/" + project.name + ".git"
+
+        version {
+            name = project.version
+            released = new Date()
+            githubRepo = "user11681/" + project.name
+            issueTrackerUrl = "https://github.com/user11681/" + project.name +  "/issues"
+        }
+    }
+}
+
+task sourceJar(type: Jar, dependsOn: classes) {
+    archiveClassifier.set("sources")
+
+    from(sourceSets.main.allSource)
+}
+
+artifacts {
+    archives sourceJar
+}
+
+publishing {
+    publications {
+        bintray(MavenPublication) {
+            groupId(project.group)
+            artifactId(project.name)
+            version(project.version)
+
+            artifact(jar)
+            artifact(sourceJar)
+        }
+    }
 }

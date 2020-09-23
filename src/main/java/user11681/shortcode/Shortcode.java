@@ -13,6 +13,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
@@ -500,6 +501,17 @@ public interface Shortcode extends Opcodes {
 
     static String toDescriptor(final String name) {
         return "L" + toInternalName(name) + ";";
+    }
+
+    static String composeMethodDescriptor(final String returnType, final String... parameterTypes) {
+        final StringBuilder descriptor = new StringBuilder("(");
+        final int parameterCount = parameterTypes.length;
+
+        for (int i = 0; i != parameterCount; i++) {
+            descriptor.append(parameterTypes[i]);
+        }
+
+        return descriptor.append(')').append(returnType).toString();
     }
 
     static void insertBeforeEveryReturn(final MethodNode in, final AbstractInsnNode instruction) {
@@ -1188,6 +1200,34 @@ public interface Shortcode extends Opcodes {
         alternative.run();
     }
 
+    static <T> T findForward(final Iterator<AbstractInsnNode> iterator, final AbstractInsnNode condition, final Supplier<T> whenFound) {
+        AbstractInsnNode instruction;
+
+        while (iterator.hasNext()) {
+            instruction = iterator.next();
+
+            if (equals(condition, instruction)) {
+                return whenFound.get();
+            }
+        }
+
+        throw new IllegalArgumentException("the specified predicate failed to apply");
+    }
+
+    static <T> T findForward(final Iterator<AbstractInsnNode> iterator, final AbstractInsnNode condition, final Supplier<T> whenFound, final Supplier<T> alternative) {
+        AbstractInsnNode instruction;
+
+        while (iterator.hasNext()) {
+            instruction = iterator.next();
+
+            if (equals(condition, instruction)) {
+                return whenFound.get();
+            }
+        }
+
+        return alternative.get();
+    }
+
     static void findForward(final Iterator<AbstractInsnNode> iterator, final AbstractInsnNode condition, final Runnable whenFound) {
         AbstractInsnNode instruction;
 
@@ -1264,6 +1304,22 @@ public interface Shortcode extends Opcodes {
         alternative.run();
     }
 
+    static void findNForward(final Iterator<AbstractInsnNode> iterator, int n, final Predicate<AbstractInsnNode> condition, final Runnable whenFound) {
+        AbstractInsnNode instruction;
+
+        while (iterator.hasNext()) {
+            instruction = iterator.next();
+
+            if (condition.test(instruction) && --n == 0) {
+                whenFound.run();
+
+                return;
+            }
+        }
+
+        throw new IllegalArgumentException("the specified predicate failed to apply");
+    }
+
     static void findForward(final Iterator<AbstractInsnNode> iterator, final Predicate<AbstractInsnNode> condition, final Runnable whenFound) {
         AbstractInsnNode instruction;
 
@@ -1318,6 +1374,20 @@ public interface Shortcode extends Opcodes {
 
             if (condition.test(instruction)) {
                 return whenFound.apply(instruction);
+            }
+        }
+
+        throw new IllegalArgumentException("the specified predicate failed to apply");
+    }
+
+    static <T> T findForward(final Iterator<AbstractInsnNode> iterator, final Predicate<AbstractInsnNode> condition, final Supplier<T> whenFound) {
+        AbstractInsnNode instruction;
+
+        while (iterator.hasNext()) {
+            instruction = iterator.next();
+
+            if (condition.test(instruction)) {
+                return whenFound.get();
             }
         }
 
