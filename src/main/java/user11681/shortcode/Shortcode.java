@@ -568,11 +568,11 @@ public abstract class Shortcode implements Opcodes {
         while (instruction != null) {
             opcode = instruction.getOpcode();
 
-            if (isLoadOpcode(opcode) || isStoreOpcode(opcode)) {
+            if (isLoad(opcode) || isStore(opcode)) {
                 ((VarInsnNode) instruction).var += locals;
             }
 
-            if (isReturnInstruction(instruction)) {
+            if (isReturn(instruction)) {
                 instructions.set(instruction, new JumpInsnNode(GOTO, end));
             }
 
@@ -584,7 +584,7 @@ public abstract class Shortcode implements Opcodes {
         instruction = in.instructions.getFirst();
 
         while (instruction != null) {
-            if (isReturnInstruction(instruction)) {
+            if (isReturn(instruction)) {
                 in.instructions.insertBefore(instruction, copyInstructions(instructions));
             }
 
@@ -1149,11 +1149,11 @@ public abstract class Shortcode implements Opcodes {
         }
     }
 
-    public static boolean isReturnInstruction(final AbstractInsnNode instruction) {
-        return isReturnOpcode(instruction.getOpcode());
+    public static boolean isReturn(final AbstractInsnNode instruction) {
+        return isReturn(instruction.getOpcode());
     }
 
-    public static boolean isReturnOpcode(final int opcode) {
+    public static boolean isReturn(final int opcode) {
         switch (opcode) {
             case IRETURN:
             case LRETURN:
@@ -1167,7 +1167,11 @@ public abstract class Shortcode implements Opcodes {
         }
     }
 
-    public static boolean isLoadOpcode(final int opcode) {
+    public static boolean isLoad(final AbstractInsnNode instruction) {
+        return isLoad(instruction.getOpcode());
+    }
+
+    public static boolean isLoad(final int opcode) {
         switch (opcode) {
             case ILOAD:
             case LLOAD:
@@ -1180,7 +1184,7 @@ public abstract class Shortcode implements Opcodes {
         }
     }
 
-    public static boolean isStoreOpcode(final int opcode) {
+    public static boolean isStore(final int opcode) {
         switch (opcode) {
             case ISTORE:
             case LSTORE:
