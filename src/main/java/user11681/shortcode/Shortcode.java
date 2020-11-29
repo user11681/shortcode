@@ -1184,6 +1184,10 @@ public abstract class Shortcode implements Opcodes {
         }
     }
 
+    public static boolean isStore(final AbstractInsnNode instruction) {
+        return isStore(instruction.getOpcode());
+    }
+
     public static boolean isStore(final int opcode) {
         switch (opcode) {
             case ISTORE:
