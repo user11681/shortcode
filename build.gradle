@@ -1,16 +1,14 @@
 plugins {
-    id("java")
     id("java-library")
-    id("maven")
     id("maven-publish")
-    id("com.jfrog.bintray") version("1.8.5")
+    id("com.jfrog.bintray").version("1.8.5")
 }
 
-sourceCompatibility = JavaVersion.VERSION_1_8
-targetCompatibility = JavaVersion.VERSION_1_8
+sourceCompatibility = 8
+targetCompatibility = 8
 
 project.group = "user11681"
-project.version = "0.0.0"
+project.version = "0.1.0"
 
 repositories {
     mavenCentral()
@@ -19,12 +17,12 @@ repositories {
 }
 
 dependencies {
-    implementation "it.unimi.dsi:fastutil:+"
-    implementation "org.apache.logging.log4j:log4j-core:+"
-    implementation "org.ow2.asm:asm:9.0-SNAPSHOT"
-    implementation "org.ow2.asm:asm-tree:9.0-SNAPSHOT"
+    implementation("it.unimi.dsi:fastutil:+")
+    implementation("org.apache.logging.log4j:log4j-core:+")
+    implementation("org.ow2.asm:asm:9.0-SNAPSHOT")
+    implementation("org.ow2.asm:asm-tree:9.0-SNAPSHOT")
 
-    testImplementation "org.junit.jupiter:junit-jupiter:+"
+    testImplementation("org.junit.jupiter:junit-jupiter:+")
 }
 
 bintray {
@@ -37,13 +35,13 @@ bintray {
         repo = "maven"
         name = project.name
         licenses = ["LGPL-3.0"]
-        vcsUrl = "https://github.com/user11681/" + project.name + ".git"
+        vcsUrl = "https://github.com/user11681/${project.name}.git"
 
         version {
             name = project.version
             released = new Date()
-            githubRepo = "user11681/" + project.name
-            issueTrackerUrl = "https://github.com/user11681/" + project.name +  "/issues"
+            githubRepo = "user11681/${project.name}"
+            issueTrackerUrl = "https://github.com/user11681/${project.name}/issues"
         }
     }
 }
@@ -55,7 +53,7 @@ task sourceJar(type: Jar, dependsOn: classes) {
 }
 
 artifacts {
-    archives sourceJar
+    archives(sourceJar)
 }
 
 publishing {

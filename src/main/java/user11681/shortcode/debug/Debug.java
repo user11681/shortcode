@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import org.apache.logging.log4j.Logger;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.FrameNode;
@@ -29,7 +30,7 @@ import org.objectweb.asm.tree.VarInsnNode;
 import user11681.shortcode.Shortcode;
 
 @SuppressWarnings({"unused", "RedundantSuppression"})
-public interface DebugUtil extends Shortcode {
+public interface Debug extends Opcodes {
     DebugOptions DEFAULT_OPTIONS = DebugOptions.defaultOptions();
 
     static void logInstructions(final MethodNode method) {
@@ -114,8 +115,8 @@ public interface DebugUtil extends Shortcode {
         final int opcode = instruction.getOpcode();
         final String string = opcode >= 0
             ? options.uppercase
-            ? TO_STRING[opcode].toUpperCase()
-            : TO_STRING[opcode]
+            ? Shortcode.TO_STRING[opcode].toUpperCase()
+            : Shortcode.TO_STRING[opcode]
             : null;
 
         switch (instruction.getType()) {
@@ -134,7 +135,7 @@ public interface DebugUtil extends Shortcode {
                         case T_SHORT:
                         case T_INT:
                         case T_LONG:
-                            return options.indentation + string + " " + ARRAY_TYPE_TO_STRING[intInstruction.operand];
+                            return options.indentation + string + " " + Shortcode.ARRAY_TYPE_TO_STRING[intInstruction.operand];
                     }
                 }
 
@@ -214,7 +215,7 @@ public interface DebugUtil extends Shortcode {
                 return options.indentation + string + multiANewArrayInstruction.desc + multiANewArrayInstruction.dims;
             case AbstractInsnNode.FRAME:
                 final FrameNode frame = (FrameNode) instruction;
-                final String type = options.uppercase ? FRAME_TYPE_TO_STRING.get(frame.type).toUpperCase() : FRAME_TYPE_TO_STRING.get(frame.type);
+                final String type = options.uppercase ? Shortcode.FRAME_TYPE_TO_STRING.get(frame.type).toUpperCase() : Shortcode.FRAME_TYPE_TO_STRING.get(frame.type);
 
                 switch (frame.type) {
                     case F_NEW:

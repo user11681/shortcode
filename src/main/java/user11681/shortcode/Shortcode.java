@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
@@ -45,15 +46,10 @@ import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
 @SuppressWarnings({"unused", "RedundantSuppression", "unchecked"})
-public interface Shortcode extends Opcodes {
-    int ABSTRACT_ALL = ACC_NATIVE | ACC_ABSTRACT;
-    int NA = 0;
-    int ANNOTATION_VISITOR = 0;
-    int ANNOTATION_NODE = 1;
-    int TYPE_ANNOTATION_NODE = 2;
-    int LOCAL_VARIABLE_ANNOTATION_NODE = 3;
-
-    int[] DELTA_STACK_SIZE = {
+public abstract class Shortcode implements Opcodes {
+    public static final int ABSTRACT_ALL = ACC_NATIVE | ACC_ABSTRACT;
+    public static final int NA = 0;
+    public static final int[] DELTA_STACK_SIZE = {
         0,
         1,
         1,
@@ -257,8 +253,15 @@ public interface Shortcode extends Opcodes {
         NA,
         NA
     };
-
-    String[] TO_STRING = {
+    public static final int ANNOTATION_VISITOR = 0;
+    public static final int ANNOTATION_NODE = 1;
+    public static final int TYPE_ANNOTATION_NODE = 2;
+    public static final int LOCAL_VARIABLE_ANNOTATION_NODE = 3;
+    public static final ClassToIntMap CLASS_TO_INT = new ClassToIntMap(
+        new Class[]{AnnotationVisitor.class, AnnotationNode.class, TypeAnnotationNode.class, LocalVariableAnnotationNode.class},
+        new int[]{ANNOTATION_VISITOR, ANNOTATION_NODE, TYPE_ANNOTATION_NODE, LOCAL_VARIABLE_ANNOTATION_NODE}
+    );
+    public static final String[] TO_STRING = {
         "nop",
         "aconst_null",
         "iconst_m1",
@@ -461,7 +464,7 @@ public interface Shortcode extends Opcodes {
         "ifnonnulL"
     };
 
-    String[] ARRAY_TYPE_TO_STRING = {
+    public static final String[] ARRAY_TYPE_TO_STRING = {
         "T_BOOLEAN",
         "T_CHAR",
         "T_FLOAT",
@@ -472,55 +475,91 @@ public interface Shortcode extends Opcodes {
         "T_LONG",
     };
 
-    Int2ReferenceOpenHashMap<String> FRAME_TYPE_TO_STRING = new Int2ReferenceOpenHashMap<>(
+    public static final Int2ReferenceOpenHashMap<String> FRAME_TYPE_TO_STRING = new Int2ReferenceOpenHashMap<>(
         new int[]{-1, 0, 1, 2, 3, 4},
         new String[]{"new", "full", "append", "chop", "same", "same1"},
         0.75F
     );
 
-    ClassToIntMap CLASS_TO_INT = new ClassToIntMap(
-        new Class[]{AnnotationVisitor.class, AnnotationNode.class, TypeAnnotationNode.class, LocalVariableAnnotationNode.class},
-        new int[]{ANNOTATION_VISITOR, ANNOTATION_NODE, TYPE_ANNOTATION_NODE, LOCAL_VARIABLE_ANNOTATION_NODE}
-    );
-
-    static String getInternalName(final Class<?> klass) {
+    public static String getInternalName(final Class<?> klass) {
         return toInternalName(klass.getName());
     }
 
-    static String toInternalName(final String binaryName) {
-        return binaryName.replace('.', '/');
+    public static String toInternalName(final String name) {
+        return fromDescriptor(name).replace('.', '/');
     }
 
-    static String getBinaryName(final ClassNode klass) {
+    public static String getBinaryName(final ClassNode klass) {
         return toBinaryName(klass.name);
     }
 
-    static String toBinaryName(final String internalName) {
-        return internalName.replace('/', '.');
+    public static String toBinaryName(final String internalName) {
+        return fromDescriptor(internalName).replace('/', '.');
     }
 
-    static String toDescriptor(final String name) {
-        return "L" + toInternalName(name) + ";";
+    public static String getDescriptor(final Class<?> klass) {
+        return toDescriptor(klass.getName());
     }
 
-    static String composeMethodDescriptor(final String returnType, final String... parameterTypes) {
+    public static String toDescriptor(String name) {
+        switch (name) {
+            case "V":
+            case "Z":
+            case "B":
+            case "C":
+            case "S":
+            case "I":
+            case "J":
+            case "F":
+            case "D":
+                return name;
+            default:
+                name = name.charAt(0) == '['
+                       ? '[' + toDescriptor(name.substring(1))
+                       : name.charAt(name.length() - 1) == ';'
+                         ? name
+                         : "L" + name + ";";
+
+                return name.replace('.', '/');
+        }
+    }
+
+    public static String fromDescriptor(String descriptor) {
+        if (descriptor.charAt(descriptor.length() - 1) == ';') {
+            final int LIndex = descriptor.indexOf('L');
+
+            descriptor = descriptor.substring(0, LIndex) + descriptor.substring(LIndex + 1, descriptor.length() - 1);
+        }
+
+        return descriptor;
+    }
+
+    public static String[] getSupertypes(final ClassNode klass) {
+        final int size = klass.interfaces.size();
+        final String[] supertypes = klass.interfaces.toArray(new String[size + 1]);
+        supertypes[size] = klass.superName;
+
+        return supertypes;
+    }
+
+    public static String composeMethodDescriptor(final String returnType, final String... parameterTypes) {
         final StringBuilder descriptor = new StringBuilder("(");
         final int parameterCount = parameterTypes.length;
 
         for (int i = 0; i != parameterCount; i++) {
-            descriptor.append(parameterTypes[i]);
+            descriptor.append(toDescriptor(parameterTypes[i]));
         }
 
-        return descriptor.append(')').append(returnType).toString();
+        return descriptor.append(')').append(toDescriptor(returnType)).toString();
     }
 
-    static void insertBeforeEveryReturn(final MethodNode in, final AbstractInsnNode instruction) {
+    public static void insertBeforeEveryReturn(final MethodNode in, final AbstractInsnNode instruction) {
         final InsnList box = new InsnList();
 
         box.add(instruction);
     }
 
-    static void insertBeforeEveryReturn(final MethodNode in, final InsnList instructions) {
+    public static void insertBeforeEveryReturn(final MethodNode in, final InsnList instructions) {
         final LabelNode end = new LabelNode();
         final int locals = in.maxLocals;
         AbstractInsnNode instruction = instructions.getFirst();
@@ -529,12 +568,12 @@ public interface Shortcode extends Opcodes {
         while (instruction != null) {
             opcode = instruction.getOpcode();
 
-            if (Shortcode.isLoadOpcode(opcode) || Shortcode.isStoreOpcode(opcode)) {
+            if (isLoadOpcode(opcode) || isStoreOpcode(opcode)) {
                 ((VarInsnNode) instruction).var += locals;
             }
 
-            if (Shortcode.isReturnInstruction(instruction)) {
-                instructions.set(instruction, new JumpInsnNode(Opcodes.GOTO, end));
+            if (isReturnInstruction(instruction)) {
+                instructions.set(instruction, new JumpInsnNode(GOTO, end));
             }
 
             instruction = instruction.getNext();
@@ -545,25 +584,25 @@ public interface Shortcode extends Opcodes {
         instruction = in.instructions.getFirst();
 
         while (instruction != null) {
-            if (Shortcode.isReturnInstruction(instruction)) {
-                in.instructions.insertBefore(instruction, Shortcode.copyInstructions(instructions));
+            if (isReturnInstruction(instruction)) {
+                in.instructions.insertBefore(instruction, copyInstructions(instructions));
             }
 
             instruction = instruction.getNext();
         }
     }
 
-    static MethodNode copyMethod(final ClassNode klass, final MethodNode method) {
+    public static MethodNode copyMethod(final ClassNode klass, final MethodNode method) {
         method.accept(klass);
 
-        return Shortcode.getFirstDeclaredMethod(klass, method.name);
+        return getFirstDeclaredMethod(klass, method.name);
     }
 
-    static InsnList copyInstructions(final InsnList instructions) {
+    public static InsnList copyInstructions(final InsnList instructions) {
         return copyInstructions(instructions, new InsnList());
     }
 
-    static <T extends InsnList> T copyInstructions(final InsnList instructions, final T storage) {
+    public static <T extends InsnList> T copyInstructions(final InsnList instructions, final T storage) {
         AbstractInsnNode instruction = instructions.getFirst();
 
         while (instruction != null) {
@@ -575,7 +614,7 @@ public interface Shortcode extends Opcodes {
         return storage;
     }
 
-    static List<? extends AbstractInsnNode> clone(final List<? extends AbstractInsnNode> instructions) {
+    public static List<? extends AbstractInsnNode> clone(final List<? extends AbstractInsnNode> instructions) {
         final int length = instructions.size();
         final ReferenceArrayList<AbstractInsnNode> clones = new ReferenceArrayList<>(length);
 
@@ -586,7 +625,7 @@ public interface Shortcode extends Opcodes {
         return clones;
     }
 
-    static <T extends AbstractInsnNode> T[] clone(final T... instructions) {
+    public static <T extends AbstractInsnNode> T[] clone(final T... instructions) {
         final int length = instructions.length;
         final T[] clones = (T[]) Array.newInstance(instructions.getClass().getComponentType(), length);
 
@@ -597,7 +636,7 @@ public interface Shortcode extends Opcodes {
         return clones;
     }
 
-    static <T extends AbstractInsnNode> T clone(final T instruction) {
+    public static <T extends AbstractInsnNode> T clone(final T instruction) {
         switch (instruction.getType()) {
             case AbstractInsnNode.INSN:
                 return (T) new InsnNode(instruction.getOpcode());
@@ -661,7 +700,7 @@ public interface Shortcode extends Opcodes {
         throw new IllegalArgumentException(String.valueOf(instruction));
     }
 
-    static ClassNode getClassNode(final Class<?> klass) {
+    public static ClassNode getClassNode(final Class<?> klass) {
         try {
             final ClassNode node = new ClassNode();
             final ClassReader reader = new ClassReader(klass.getName());
@@ -674,7 +713,7 @@ public interface Shortcode extends Opcodes {
         }
     }
 
-    static ClassNode getClassNode(final String className) {
+    public static ClassNode getClassNode(final String className) {
         try {
             final ClassNode klass = new ClassNode();
             final ClassReader reader = new ClassReader(className);
@@ -687,7 +726,7 @@ public interface Shortcode extends Opcodes {
         }
     }
 
-    static LocalVariableNode getLocalVariable(final MethodNode method, final int index) {
+    public static LocalVariableNode getLocalVariable(final MethodNode method, final int index) {
         LocalVariableNode result = null;
 
         for (final LocalVariableNode local : method.localVariables) {
@@ -701,7 +740,7 @@ public interface Shortcode extends Opcodes {
         return result;
     }
 
-    static LocalVariableNode getLocalVariable(final MethodNode method, final String name) {
+    public static LocalVariableNode getLocalVariable(final MethodNode method, final String name) {
         LocalVariableNode result = null;
 
         for (final LocalVariableNode local : method.localVariables) {
@@ -715,15 +754,15 @@ public interface Shortcode extends Opcodes {
         return result;
     }
 
-    static ReferenceArrayList<AbstractInsnNode> getInstructions(final ClassNode klass, final String method) {
+    public static ReferenceArrayList<AbstractInsnNode> getInstructions(final ClassNode klass, final String method) {
         return getInstructions(getFirstDeclaredMethod(klass, method));
     }
 
-    static ReferenceArrayList<AbstractInsnNode> getInstructions(final MethodNode method) {
+    public static ReferenceArrayList<AbstractInsnNode> getInstructions(final MethodNode method) {
         return new ReferenceArrayList<>(method.instructions.toArray());
     }
 
-    static MethodNode tryGetFirstMethod(ClassNode klass, final String name) {
+    public static MethodNode tryGetFirstMethod(ClassNode klass, final String name) {
         for (final MethodNode method : klass.methods) {
             if (name.equals(method.name)) {
                 return method;
@@ -747,7 +786,7 @@ public interface Shortcode extends Opcodes {
         return null;
     }
 
-    static MethodNode getFirstMethod(ClassNode klass, final String name) {
+    public static MethodNode getFirstMethod(ClassNode klass, final String name) {
         for (final MethodNode method : klass.methods) {
             if (name.equals(method.name)) {
                 return method;
@@ -771,7 +810,7 @@ public interface Shortcode extends Opcodes {
         throw new IllegalArgumentException(String.format("the given ClassNode does not contain method %s", name));
     }
 
-    static MethodNode tryGetFirstDeclaredMethod(final ClassNode klass, final String name) {
+    public static MethodNode tryGetFirstDeclaredMethod(final ClassNode klass, final String name) {
         for (final MethodNode method : klass.methods) {
             if (name.equals(method.name)) {
                 return method;
@@ -781,7 +820,7 @@ public interface Shortcode extends Opcodes {
         return null;
     }
 
-    static MethodNode getFirstDeclaredMethod(final ClassNode klass, final String name) {
+    public static MethodNode getFirstDeclaredMethod(final ClassNode klass, final String name) {
         for (final MethodNode method : klass.methods) {
             if (name.equals(method.name)) {
                 return method;
@@ -791,7 +830,7 @@ public interface Shortcode extends Opcodes {
         throw new IllegalArgumentException(String.format("the given ClassNode does not contain method %s", name));
     }
 
-    static ReferenceArrayList<MethodNode> getAllMethods(ClassNode klass) {
+    public static ReferenceArrayList<MethodNode> getAllMethods(ClassNode klass) {
         final ReferenceArrayList<MethodNode> methods = new ReferenceArrayList<>();
 
         while (true) {
@@ -815,11 +854,11 @@ public interface Shortcode extends Opcodes {
         return methods;
     }
 
-    static ReferenceArrayList<MethodNode> getMethods(final String internalClassName, final String name) {
+    public static ReferenceArrayList<MethodNode> getMethods(final String internalClassName, final String name) {
         return getMethods(getClassNode(internalClassName), name);
     }
 
-    static ReferenceArrayList<MethodNode> getMethods(final ClassNode klass, final String name) {
+    public static ReferenceArrayList<MethodNode> getMethods(final ClassNode klass, final String name) {
         final ReferenceArrayList<MethodNode> methods = new ReferenceArrayList<>();
 
         for (final MethodNode method : klass.methods) {
@@ -831,7 +870,7 @@ public interface Shortcode extends Opcodes {
         return methods;
     }
 
-    static ReferenceArrayList<AbstractInsnNode> getInstructions(final InsnList instructions, final Predicate<AbstractInsnNode> condition) {
+    public static ReferenceArrayList<AbstractInsnNode> getInstructions(final InsnList instructions, final Predicate<AbstractInsnNode> condition) {
         final ReferenceArrayList<AbstractInsnNode> matchingInstructions = new ReferenceArrayList<>();
 
         for (final AbstractInsnNode instruction : instructions) {
@@ -843,19 +882,19 @@ public interface Shortcode extends Opcodes {
         return matchingInstructions;
     }
 
-    static int countExplicitParameters(final InvokeDynamicInsnNode instruction) {
+    public static int countExplicitParameters(final InvokeDynamicInsnNode instruction) {
         return countExplicitParameters(instruction.desc);
     }
 
-    static int countExplicitParameters(final MethodInsnNode instruction) {
+    public static int countExplicitParameters(final MethodInsnNode instruction) {
         return countExplicitParameters(instruction.desc);
     }
 
-    static int countExplicitParameters(final MethodNode method) {
+    public static int countExplicitParameters(final MethodNode method) {
         return countExplicitParameters(method.desc);
     }
 
-    static int countExplicitParameters(final String descriptor) {
+    public static int countExplicitParameters(final String descriptor) {
         final String terminators = "VZCBSIJFD;";
         final int end = descriptor.indexOf(')');
         int parameterCount = 0;
@@ -875,19 +914,19 @@ public interface Shortcode extends Opcodes {
         return parameterCount;
     }
 
-    static ReferenceArrayList<String> getExplicitParameters(final InvokeDynamicInsnNode instruction) {
+    public static ReferenceArrayList<String> getExplicitParameters(final InvokeDynamicInsnNode instruction) {
         return getExplicitParameters(instruction.desc);
     }
 
-    static ReferenceArrayList<String> getExplicitParameters(final MethodInsnNode instruction) {
+    public static ReferenceArrayList<String> getExplicitParameters(final MethodInsnNode instruction) {
         return getExplicitParameters(instruction.desc);
     }
 
-    static ReferenceArrayList<String> getExplicitParameters(final MethodNode method) {
+    public static ReferenceArrayList<String> getExplicitParameters(final MethodNode method) {
         return getExplicitParameters(method.desc);
     }
 
-    static ReferenceArrayList<String> getExplicitParameters(final String descriptor) {
+    public static ReferenceArrayList<String> getExplicitParameters(final String descriptor) {
         final ReferenceArrayList<String> parameters = new ReferenceArrayList<>();
         final int end = descriptor.indexOf(')');
         final StringBuilder parameter = new StringBuilder();
@@ -907,35 +946,35 @@ public interface Shortcode extends Opcodes {
         return parameters;
     }
 
-    static String getReturnType(final InvokeDynamicInsnNode instruction) {
+    public static String getReturnType(final InvokeDynamicInsnNode instruction) {
         return getReturnType(instruction.desc);
     }
 
-    static String getReturnType(final MethodInsnNode instruction) {
+    public static String getReturnType(final MethodInsnNode instruction) {
         return getReturnType(instruction.desc);
     }
 
-    static String getReturnType(final MethodNode method) {
+    public static String getReturnType(final MethodNode method) {
         return getReturnType(method.desc);
     }
 
-    static String getReturnType(final String descriptor) {
+    public static String getReturnType(final String descriptor) {
         return descriptor.substring(descriptor.indexOf(')') + 1);
     }
 
-    static ReferenceArrayList<String> parseDescriptor(final InvokeDynamicInsnNode instruction) {
+    public static ReferenceArrayList<String> parseDescriptor(final InvokeDynamicInsnNode instruction) {
         return parseDescriptor(instruction.desc);
     }
 
-    static ReferenceArrayList<String> parseDescriptor(final MethodInsnNode instruction) {
+    public static ReferenceArrayList<String> parseDescriptor(final MethodInsnNode instruction) {
         return parseDescriptor(instruction.desc);
     }
 
-    static ReferenceArrayList<String> parseDescriptor(final MethodNode method) {
+    public static ReferenceArrayList<String> parseDescriptor(final MethodNode method) {
         return parseDescriptor(method.desc);
     }
 
-    static ReferenceArrayList<String> parseDescriptor(final String descriptor) {
+    public static ReferenceArrayList<String> parseDescriptor(final String descriptor) {
         final ReferenceArrayList<String> types = new ReferenceArrayList<>();
         final int end = descriptor.indexOf(')');
         final String primitives = "VZCBSIJFD";
@@ -959,11 +998,25 @@ public interface Shortcode extends Opcodes {
         return types;
     }
 
-    static <T> T getAnnotationValue(final List<AnnotationNode> annotations, final Class<? extends Annotation> type, final String property, final T alternative) {
-        return getAnnotationValue(annotations, Type.getDescriptor(type), property, alternative);
+    public static List<AnnotationNode> getRepeatableAnnotations(final List<AnnotationNode> annotations, final Class<? extends Annotation> repeatableType, final Class<? extends Annotation> container) {
+        for (final AnnotationNode annotation : annotations) {
+            if (annotation.desc.equals(getDescriptor(repeatableType))) {
+                return Collections.singletonList(annotation);
+            }
+
+            if (annotation.desc.equals(getDescriptor(container))) {
+                return getAnnotationValue(annotation, "value");
+            }
+        }
+
+        return Collections.EMPTY_LIST;
     }
 
-    static <T> T getAnnotationValue(final List<AnnotationNode> annotations, final String annotationDescriptor, final String property, final T alternative) {
+    public static <T> T getAnnotationValue(final List<AnnotationNode> annotations, final Class<? extends Annotation> type, final String element, final T alternative) {
+        return getAnnotationValue(annotations, Type.getDescriptor(type), element, alternative);
+    }
+
+    public static <T> T getAnnotationValue(final List<AnnotationNode> annotations, final String annotationDescriptor, final String element, final T alternative) {
         final AnnotationNode[] annotationArray = annotations.toArray(new AnnotationNode[0]);
         Object[] values;
 
@@ -972,8 +1025,7 @@ public interface Shortcode extends Opcodes {
                 values = annotationArray[i].values.toArray();
 
                 for (int j = 0; j < values.length; j++) {
-                    if (property.equals(values[j])) {
-                        //noinspection unchecked
+                    if (element.equals(values[j])) {
                         return (T) values[j + i];
                     }
                 }
@@ -985,13 +1037,12 @@ public interface Shortcode extends Opcodes {
         return null;
     }
 
-    static <T> T getAnnotationValue(final AnnotationNode annotation, final String property, final T alternative) {
+    public static <T> T getAnnotationValue(final AnnotationNode annotation, final String element, final T alternative) {
         final Object[] values = annotation.values.toArray();
         final int size = values.length;
 
         for (int i = 0; i < size; i += 2) {
-            if (property.equals(values[i])) {
-                //noinspection unchecked
+            if (element.equals(values[i])) {
                 return (T) values[i + 1];
             }
         }
@@ -999,21 +1050,20 @@ public interface Shortcode extends Opcodes {
         return alternative;
     }
 
-    static <T> T getAnnotationValue(final AnnotationNode annotation, final String property) {
+    public static <T> T getAnnotationValue(final AnnotationNode annotation, final String element) {
         final Object[] values = annotation.values.toArray();
         final int size = values.length;
 
         for (int i = 0; i < size; i += 2) {
-            if (property.equals(values[i])) {
-                //noinspection unchecked
+            if (element.equals(values[i])) {
                 return (T) values[i + 1];
             }
         }
 
-        throw new RuntimeException(String.format("cannot find the value of %s in %s", property, annotation));
+        throw new RuntimeException(String.format("cannot find the value of %s in %s", element, annotation));
     }
 
-    static Object getDefaultValue(final String descriptor) {
+    public static Object getDefaultValue(final String descriptor) {
         switch (descriptor) {
             case "Z":
                 return false;
@@ -1036,7 +1086,7 @@ public interface Shortcode extends Opcodes {
         }
     }
 
-    static int getLoadOpcode(final String descriptor) {
+    public static int getLoadOpcode(final String descriptor) {
         switch (descriptor) {
             case "Z":
             case "C":
@@ -1055,11 +1105,30 @@ public interface Shortcode extends Opcodes {
         }
     }
 
-    static int getReturnOpcode(final MethodNode method) {
+    public static int getStoreOpcode(final String descriptor) {
+        switch (descriptor) {
+            case "Z":
+            case "C":
+            case "B":
+            case "S":
+            case "I":
+                return ISTORE;
+            case "J":
+                return LSTORE;
+            case "F":
+                return FSTORE;
+            case "D":
+                return DSTORE;
+            default:
+                return ASTORE;
+        }
+    }
+
+    public static int getReturnOpcode(final MethodNode method) {
         return getReturnOpcode(getReturnType(method.desc));
     }
 
-    static int getReturnOpcode(final String descriptor) {
+    public static int getReturnOpcode(final String descriptor) {
         switch (descriptor) {
             case "Z":
             case "C":
@@ -1080,11 +1149,11 @@ public interface Shortcode extends Opcodes {
         }
     }
 
-    static boolean isReturnInstruction(final AbstractInsnNode instruction) {
+    public static boolean isReturnInstruction(final AbstractInsnNode instruction) {
         return isReturnOpcode(instruction.getOpcode());
     }
 
-    static boolean isReturnOpcode(final int opcode) {
+    public static boolean isReturnOpcode(final int opcode) {
         switch (opcode) {
             case IRETURN:
             case LRETURN:
@@ -1098,7 +1167,7 @@ public interface Shortcode extends Opcodes {
         }
     }
 
-    static boolean isLoadOpcode(final int opcode) {
+    public static boolean isLoadOpcode(final int opcode) {
         switch (opcode) {
             case ILOAD:
             case LLOAD:
@@ -1111,7 +1180,7 @@ public interface Shortcode extends Opcodes {
         }
     }
 
-    static boolean isStoreOpcode(final int opcode) {
+    public static boolean isStoreOpcode(final int opcode) {
         switch (opcode) {
             case ISTORE:
             case LSTORE:
@@ -1124,7 +1193,11 @@ public interface Shortcode extends Opcodes {
         }
     }
 
-    static void findBackward(final ListIterator<AbstractInsnNode> iterator, final Predicate<AbstractInsnNode> condition, final Runnable whenFound) {
+    public static boolean hasFlag(final int bitField, final int flag) {
+        return (bitField & flag) != 0;
+    }
+
+    public static void findBackward(final ListIterator<AbstractInsnNode> iterator, final Predicate<AbstractInsnNode> condition, final Runnable whenFound) {
         AbstractInsnNode instruction;
 
         while (iterator.hasPrevious()) {
@@ -1140,7 +1213,7 @@ public interface Shortcode extends Opcodes {
         throw new IllegalArgumentException("the specified predicate failed to apply");
     }
 
-    static void findBackward(final ListIterator<AbstractInsnNode> iterator, final Predicate<AbstractInsnNode> condition, final Runnable whenFound, final Runnable alternative) {
+    public static void findBackward(final ListIterator<AbstractInsnNode> iterator, final Predicate<AbstractInsnNode> condition, final Runnable whenFound, final Runnable alternative) {
         AbstractInsnNode instruction;
 
         while (iterator.hasPrevious()) {
@@ -1156,7 +1229,7 @@ public interface Shortcode extends Opcodes {
         alternative.run();
     }
 
-    static void findBackward(final ListIterator<AbstractInsnNode> iterator, final Predicate<AbstractInsnNode> condition, final Consumer<AbstractInsnNode> whenFound) {
+    public static void findBackward(final ListIterator<AbstractInsnNode> iterator, final Predicate<AbstractInsnNode> condition, final Consumer<AbstractInsnNode> whenFound) {
         AbstractInsnNode instruction;
 
         while (iterator.hasPrevious()) {
@@ -1170,7 +1243,7 @@ public interface Shortcode extends Opcodes {
         }
     }
 
-    static <T> T findBackward(final ListIterator<AbstractInsnNode> iterator, final Predicate<AbstractInsnNode> condition, final Function<AbstractInsnNode, T> whenFound) {
+    public static <T> T findBackward(final ListIterator<AbstractInsnNode> iterator, final Predicate<AbstractInsnNode> condition, final Function<AbstractInsnNode, T> whenFound) {
         AbstractInsnNode instruction;
 
         while (iterator.hasPrevious()) {
@@ -1184,7 +1257,7 @@ public interface Shortcode extends Opcodes {
         throw new IllegalArgumentException("the specified predicate failed to apply");
     }
 
-    static void findBackward(final ListIterator<AbstractInsnNode> iterator, final Predicate<AbstractInsnNode> condition, final Consumer<AbstractInsnNode> whenFound, final Runnable alternative) {
+    public static void findBackward(final ListIterator<AbstractInsnNode> iterator, final Predicate<AbstractInsnNode> condition, final Consumer<AbstractInsnNode> whenFound, final Runnable alternative) {
         AbstractInsnNode instruction;
 
         while (iterator.hasPrevious()) {
@@ -1200,7 +1273,7 @@ public interface Shortcode extends Opcodes {
         alternative.run();
     }
 
-    static <T> T findForward(final Iterator<AbstractInsnNode> iterator, final AbstractInsnNode condition, final Supplier<T> whenFound) {
+    public static <T> T findForward(final Iterator<AbstractInsnNode> iterator, final AbstractInsnNode condition, final Supplier<T> whenFound) {
         AbstractInsnNode instruction;
 
         while (iterator.hasNext()) {
@@ -1214,7 +1287,7 @@ public interface Shortcode extends Opcodes {
         throw new IllegalArgumentException("the specified predicate failed to apply");
     }
 
-    static <T> T findForward(final Iterator<AbstractInsnNode> iterator, final AbstractInsnNode condition, final Supplier<T> whenFound, final Supplier<T> alternative) {
+    public static <T> T findForward(final Iterator<AbstractInsnNode> iterator, final AbstractInsnNode condition, final Supplier<T> whenFound, final Supplier<T> alternative) {
         AbstractInsnNode instruction;
 
         while (iterator.hasNext()) {
@@ -1228,7 +1301,7 @@ public interface Shortcode extends Opcodes {
         return alternative.get();
     }
 
-    static void findForward(final Iterator<AbstractInsnNode> iterator, final AbstractInsnNode condition, final Runnable whenFound) {
+    public static void findForward(final Iterator<AbstractInsnNode> iterator, final AbstractInsnNode condition, final Runnable whenFound) {
         AbstractInsnNode instruction;
 
         while (iterator.hasNext()) {
@@ -1244,7 +1317,7 @@ public interface Shortcode extends Opcodes {
         throw new IllegalArgumentException("the specified predicate failed to apply");
     }
 
-    static void findForward(final Iterator<AbstractInsnNode> iterator, final AbstractInsnNode condition, final Runnable whenFound, final Runnable alternative) {
+    public static void findForward(final Iterator<AbstractInsnNode> iterator, final AbstractInsnNode condition, final Runnable whenFound, final Runnable alternative) {
         AbstractInsnNode instruction;
 
         while (iterator.hasNext()) {
@@ -1260,7 +1333,7 @@ public interface Shortcode extends Opcodes {
         alternative.run();
     }
 
-    static void findForward(final Iterator<AbstractInsnNode> iterator, final AbstractInsnNode condition, final Consumer<AbstractInsnNode> whenFound) {
+    public static void findForward(final Iterator<AbstractInsnNode> iterator, final AbstractInsnNode condition, final Consumer<AbstractInsnNode> whenFound) {
         AbstractInsnNode instruction;
 
         while (iterator.hasNext()) {
@@ -1274,7 +1347,7 @@ public interface Shortcode extends Opcodes {
         }
     }
 
-    static <T> T findForward(final Iterator<AbstractInsnNode> iterator, final AbstractInsnNode condition, final Function<AbstractInsnNode, T> whenFound) {
+    public static <T> T findForward(final Iterator<AbstractInsnNode> iterator, final AbstractInsnNode condition, final Function<AbstractInsnNode, T> whenFound) {
         AbstractInsnNode instruction;
 
         while (iterator.hasNext()) {
@@ -1288,7 +1361,7 @@ public interface Shortcode extends Opcodes {
         throw new IllegalArgumentException("the specified predicate failed to apply");
     }
 
-    static void findForward(final Iterator<AbstractInsnNode> iterator, final AbstractInsnNode condition, final Consumer<AbstractInsnNode> whenFound, final Runnable alternative) {
+    public static void findForward(final Iterator<AbstractInsnNode> iterator, final AbstractInsnNode condition, final Consumer<AbstractInsnNode> whenFound, final Runnable alternative) {
         AbstractInsnNode instruction;
 
         while (iterator.hasNext()) {
@@ -1304,7 +1377,7 @@ public interface Shortcode extends Opcodes {
         alternative.run();
     }
 
-    static void findNForward(final Iterator<AbstractInsnNode> iterator, int n, final Predicate<AbstractInsnNode> condition, final Runnable whenFound) {
+    public static void findNForward(final Iterator<AbstractInsnNode> iterator, int n, final Predicate<AbstractInsnNode> condition, final Runnable whenFound) {
         AbstractInsnNode instruction;
 
         while (iterator.hasNext()) {
@@ -1320,7 +1393,7 @@ public interface Shortcode extends Opcodes {
         throw new IllegalArgumentException("the specified predicate failed to apply");
     }
 
-    static void findForward(final Iterator<AbstractInsnNode> iterator, final Predicate<AbstractInsnNode> condition, final Runnable whenFound) {
+    public static void findForward(final Iterator<AbstractInsnNode> iterator, final Predicate<AbstractInsnNode> condition, final Runnable whenFound) {
         AbstractInsnNode instruction;
 
         while (iterator.hasNext()) {
@@ -1336,7 +1409,7 @@ public interface Shortcode extends Opcodes {
         throw new IllegalArgumentException("the specified predicate failed to apply");
     }
 
-    static void findForward(final Iterator<AbstractInsnNode> iterator, final Predicate<AbstractInsnNode> condition, final Runnable whenFound, final Runnable alternative) {
+    public static void findForward(final Iterator<AbstractInsnNode> iterator, final Predicate<AbstractInsnNode> condition, final Runnable whenFound, final Runnable alternative) {
         AbstractInsnNode instruction;
 
         while (iterator.hasNext()) {
@@ -1352,7 +1425,7 @@ public interface Shortcode extends Opcodes {
         alternative.run();
     }
 
-    static void findForward(final Iterator<AbstractInsnNode> iterator, final Predicate<AbstractInsnNode> condition, final Consumer<AbstractInsnNode> whenFound) {
+    public static void findForward(final Iterator<AbstractInsnNode> iterator, final Predicate<AbstractInsnNode> condition, final Consumer<AbstractInsnNode> whenFound) {
         AbstractInsnNode instruction;
 
         while (iterator.hasNext()) {
@@ -1366,7 +1439,7 @@ public interface Shortcode extends Opcodes {
         }
     }
 
-    static <T> T findForward(final Iterator<AbstractInsnNode> iterator, final Predicate<AbstractInsnNode> condition, final Function<AbstractInsnNode, T> whenFound) {
+    public static <T> T findForward(final Iterator<AbstractInsnNode> iterator, final Predicate<AbstractInsnNode> condition, final Function<AbstractInsnNode, T> whenFound) {
         AbstractInsnNode instruction;
 
         while (iterator.hasNext()) {
@@ -1380,7 +1453,7 @@ public interface Shortcode extends Opcodes {
         throw new IllegalArgumentException("the specified predicate failed to apply");
     }
 
-    static <T> T findForward(final Iterator<AbstractInsnNode> iterator, final Predicate<AbstractInsnNode> condition, final Supplier<T> whenFound) {
+    public static <T> T findForward(final Iterator<AbstractInsnNode> iterator, final Predicate<AbstractInsnNode> condition, final Supplier<T> whenFound) {
         AbstractInsnNode instruction;
 
         while (iterator.hasNext()) {
@@ -1394,7 +1467,7 @@ public interface Shortcode extends Opcodes {
         throw new IllegalArgumentException("the specified predicate failed to apply");
     }
 
-    static void findForward(final Iterator<AbstractInsnNode> iterator, final Predicate<AbstractInsnNode> condition, final Consumer<AbstractInsnNode> whenFound, final Runnable alternative) {
+    public static void findForward(final Iterator<AbstractInsnNode> iterator, final Predicate<AbstractInsnNode> condition, final Consumer<AbstractInsnNode> whenFound, final Runnable alternative) {
         AbstractInsnNode instruction;
 
         while (iterator.hasNext()) {
@@ -1417,7 +1490,7 @@ public interface Shortcode extends Opcodes {
      * @param from     the {@linkplain AbstractInsnNode#getType() type} of the lower bound (inclusive) of the area to remove
      * @param to       the {@linkplain AbstractInsnNode#getType() type} of the upper bound (exclusive) of the area to remove
      */
-    static void removeBetween(final ListIterator<AbstractInsnNode> iterator, final int from, final int to) {
+    public static void removeBetween(final ListIterator<AbstractInsnNode> iterator, final int from, final int to) {
         while (iterator.previous().getType() != from) {
             iterator.remove();
         }
@@ -1436,7 +1509,7 @@ public interface Shortcode extends Opcodes {
      * @param from     a predicate matching the lower bound (inclusive) of the area to remove
      * @param to       a predicate matching the upper bound (exclusive) of the area to remove
      */
-    static void removeBetween(final ListIterator<AbstractInsnNode> iterator, final Predicate<AbstractInsnNode> from, final Predicate<AbstractInsnNode> to) {
+    public static void removeBetween(final ListIterator<AbstractInsnNode> iterator, final Predicate<AbstractInsnNode> from, final Predicate<AbstractInsnNode> to) {
         AbstractInsnNode instruction = iterator.previous();
 
         while (!from.test(instruction)) {
@@ -1463,7 +1536,7 @@ public interface Shortcode extends Opcodes {
      * @param from     the {@linkplain AbstractInsnNode#getType() type} of the lower bound (inclusive) of the area to remove
      * @param to       the {@linkplain AbstractInsnNode#getType() type} of the upper bound (inclusive) of the area to remove
      */
-    static void removeBetweenInclusive(final ListIterator<AbstractInsnNode> iterator, final int from, final int to) {
+    public static void removeBetweenInclusive(final ListIterator<AbstractInsnNode> iterator, final int from, final int to) {
         while (iterator.previous().getType() != from) {
             iterator.remove();
         }
@@ -1484,7 +1557,7 @@ public interface Shortcode extends Opcodes {
      * @param from     a predicate matching the lower bound (inclusive) of the area to remove
      * @param to       a predicate matching the upper bound (inclusive) of the area to remove
      */
-    static void removeBetweenInclusive(final ListIterator<AbstractInsnNode> iterator, final Predicate<AbstractInsnNode> from, final Predicate<AbstractInsnNode> to) {
+    public static void removeBetweenInclusive(final ListIterator<AbstractInsnNode> iterator, final Predicate<AbstractInsnNode> from, final Predicate<AbstractInsnNode> to) {
         AbstractInsnNode instruction = iterator.previous();
 
         while (!from.test(instruction)) {
@@ -1513,7 +1586,7 @@ public interface Shortcode extends Opcodes {
      * @param from     the {@linkplain AbstractInsnNode#getType() type} of the lower bound (exclusive) of the area to remove
      * @param to       the {@linkplain AbstractInsnNode#getType() type} of the upper bound (exclusive) of the area to remove
      */
-    static void removeBetweenExclusive(final ListIterator<AbstractInsnNode> iterator, final int from, final int to) {
+    public static void removeBetweenExclusive(final ListIterator<AbstractInsnNode> iterator, final int from, final int to) {
         while (iterator.previous().getType() != from) {
             iterator.remove();
         }
@@ -1532,7 +1605,7 @@ public interface Shortcode extends Opcodes {
      * @param from     a predicate matching the lower bound (exclusive) of the area to remove
      * @param to       a predicate matching the upper bound (exclusive) of the area to remove
      */
-    static void removeBetweenExclusive(final ListIterator<AbstractInsnNode> iterator, final Predicate<AbstractInsnNode> from, final Predicate<AbstractInsnNode> to) {
+    public static void removeBetweenExclusive(final ListIterator<AbstractInsnNode> iterator, final Predicate<AbstractInsnNode> from, final Predicate<AbstractInsnNode> to) {
         AbstractInsnNode instruction = iterator.previous();
 
         while (!from.test(instruction)) {
@@ -1552,7 +1625,7 @@ public interface Shortcode extends Opcodes {
         }
     }
 
-    static ReferenceArrayList<AbstractInsnNode> getInstructions(final InsnList instructions) {
+    public static ReferenceArrayList<AbstractInsnNode> getInstructions(final InsnList instructions) {
         final ReferenceArrayList<AbstractInsnNode> list = new ReferenceArrayList<>();
         AbstractInsnNode instruction = instructions.getFirst();
 
@@ -1565,7 +1638,7 @@ public interface Shortcode extends Opcodes {
         return list;
     }
 
-    static boolean equals(final Object object, final Object other) {
+    public static boolean equals(final Object object, final Object other) {
         if (object == other) {
             return true;
         }
@@ -1593,7 +1666,7 @@ public interface Shortcode extends Opcodes {
         return Objects.equals(object, other);
     }
 
-    static boolean equals(final Object[] array, final Object[] other) {
+    public static boolean equals(final Object[] array, final Object[] other) {
         if (array == other) {
             return true;
         }
@@ -1617,7 +1690,7 @@ public interface Shortcode extends Opcodes {
         return true;
     }
 
-    static boolean equals(final List<?> list, final List<?> other) {
+    public static boolean equals(final List<?> list, final List<?> other) {
         if (list == other) {
             return true;
         }
@@ -1641,7 +1714,7 @@ public interface Shortcode extends Opcodes {
         return true;
     }
 
-    static boolean equalsTypeAnnotations(final List<TypeAnnotationNode> annotations, final List<TypeAnnotationNode> other) {
+    public static boolean equalsTypeAnnotations(final List<TypeAnnotationNode> annotations, final List<TypeAnnotationNode> other) {
         if (annotations == other) {
             return true;
         }
@@ -1665,11 +1738,11 @@ public interface Shortcode extends Opcodes {
         return true;
     }
 
-    static boolean equals(final InsnList instructions, final InsnList otherInstructions) {
+    public static boolean equals(final InsnList instructions, final InsnList otherInstructions) {
         return equals(instructions, otherInstructions, false);
     }
 
-    static boolean equals(final InsnList instructions, final InsnList otherInstructions, final boolean compareAnnotations) {
+    public static boolean equals(final InsnList instructions, final InsnList otherInstructions, final boolean compareAnnotations) {
         if (instructions == otherInstructions) {
             return true;
         }
@@ -1699,11 +1772,11 @@ public interface Shortcode extends Opcodes {
         return true;
     }
 
-    static boolean equals(final AbstractInsnNode instruction, final AbstractInsnNode other) {
+    public static boolean equals(final AbstractInsnNode instruction, final AbstractInsnNode other) {
         return equals(instruction, other, false);
     }
 
-    static boolean equals(final AbstractInsnNode instruction, final AbstractInsnNode other, final boolean compareAnnotations) {
+    public static boolean equals(final AbstractInsnNode instruction, final AbstractInsnNode other, final boolean compareAnnotations) {
         if (instruction == other) {
             return true;
         }
@@ -1844,11 +1917,11 @@ public interface Shortcode extends Opcodes {
         return false;
     }
 
-    static boolean equals(final LocalVariableAnnotationNode annotation, final LocalVariableAnnotationNode other) {
+    public static boolean equals(final LocalVariableAnnotationNode annotation, final LocalVariableAnnotationNode other) {
         return equals((TypeAnnotationNode) annotation, other) && Objects.equals(annotation.start, other.start) && Objects.equals(annotation.end, other.end) && Objects.equals(annotation.index, other.index);
     }
 
-    static boolean equals(final TypeAnnotationNode annotation, final TypeAnnotationNode other) {
+    public static boolean equals(final TypeAnnotationNode annotation, final TypeAnnotationNode other) {
         if (annotation.typeRef != other.typeRef) {
             return false;
         }
@@ -1873,11 +1946,11 @@ public interface Shortcode extends Opcodes {
         return equals((AnnotationNode) annotation, other);
     }
 
-    static boolean equals(final AnnotationNode annotation, final AnnotationNode other) {
+    public static boolean equals(final AnnotationNode annotation, final AnnotationNode other) {
         return Objects.equals(annotation.desc, other.desc) && equals(annotation.values, other.values);
     }
 
-    static boolean equals(final AnnotationVisitor annotation, final AnnotationVisitor other) {
+    public static boolean equals(final AnnotationVisitor annotation, final AnnotationVisitor other) {
         if (annotation == other) {
             return true;
         }

@@ -1,6 +1,7 @@
 package user11681.shortcode.instruction;
 
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.FieldInsnNode;
@@ -14,7 +15,7 @@ import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 import user11681.shortcode.Shortcode;
 
-public class InstructionWalker implements Shortcode {
+public class InstructionWalker implements Opcodes {
     public final ReferenceArrayList<String> operands = new ReferenceArrayList<>();
     public final ReferenceArrayList<String> variables = new ReferenceArrayList<>();
 
@@ -81,7 +82,7 @@ public class InstructionWalker implements Shortcode {
                 this.push(Type.getDescriptor(((LdcInsnNode) instruction).cst.getClass()));
                 break;
             case ALOAD:
-                this.operands.push("Ljava/lang/Object;");
+                this.operands.push(this.variables.get(((VarInsnNode) instruction).var));
                 break;
             case LALOAD:
                 this.operands.pop();
@@ -308,7 +309,7 @@ public class InstructionWalker implements Shortcode {
                 break;
             case ATHROW:
                 this.operands.clear();
-                this.operands.add("Ljava/lang/Throwable;");
+                this.operands.add(this.variables.top());
                 break;
             case MULTIANEWARRAY:
                 this.walk((MultiANewArrayInsnNode) instruction);
@@ -644,7 +645,7 @@ public class InstructionWalker implements Shortcode {
     private void swap() {
         final int end = this.operands.size() - 1;
 
-        this.operands.set(end, this.operands.set(end -1, this.operands.top()));
+        this.operands.set(end, this.operands.set(end - 1, this.operands.top()));
     }
 
     private void push(final String descriptor) {
