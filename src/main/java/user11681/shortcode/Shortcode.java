@@ -1,12 +1,15 @@
 package user11681.shortcode;
 
+import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
@@ -44,9 +47,11 @@ import org.objectweb.asm.tree.TableSwitchInsnNode;
 import org.objectweb.asm.tree.TypeAnnotationNode;
 import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
+import user11681.shortcode.instruction.MethodInvocation;
 
 @SuppressWarnings({"unused", "RedundantSuppression", "unchecked"})
 public abstract class Shortcode implements Opcodes {
+    public static final Object notFound = null;
     public static final int ABSTRACT_ALL = ACC_NATIVE | ACC_ABSTRACT;
     public static final int NA = 0;
     public static final int[] DELTA_STACK_SIZE = {
@@ -464,7 +469,7 @@ public abstract class Shortcode implements Opcodes {
         "ifnonnulL"
     };
 
-    public static final String[] ARRAY_TYPE_TO_STRING = {
+    public static final String[] arrayTypeToString = {
         "T_BOOLEAN",
         "T_CHAR",
         "T_FLOAT",
@@ -475,11 +480,13 @@ public abstract class Shortcode implements Opcodes {
         "T_LONG",
     };
 
-    public static final Int2ReferenceOpenHashMap<String> FRAME_TYPE_TO_STRING = new Int2ReferenceOpenHashMap<>(
+    public static final Int2ReferenceOpenHashMap<String> frameToString = new Int2ReferenceOpenHashMap<>(
         new int[]{-1, 0, 1, 2, 3, 4},
         new String[]{"new", "full", "append", "chop", "same", "same1"},
         0.75F
     );
+
+    private static final HashMap<MethodInvocation, MethodNode> methodCache = new HashMap<>();
 
     public static String getInternalName(final Class<?> klass) {
         return toInternalName(klass.getName());
@@ -524,14 +531,30 @@ public abstract class Shortcode implements Opcodes {
         }
     }
 
-    public static String fromDescriptor(String descriptor) {
+    public static String fromDescriptor(final String descriptor) {
         if (descriptor.charAt(descriptor.length() - 1) == ';') {
             final int LIndex = descriptor.indexOf('L');
 
-            descriptor = descriptor.substring(0, LIndex) + descriptor.substring(LIndex + 1, descriptor.length() - 1);
+            return descriptor.substring(0, LIndex) + descriptor.substring(LIndex + 1, descriptor.length() - 1);
         }
 
         return descriptor;
+    }
+
+    public static String getLocation(final String name) {
+        return toInternalName(name) + ".class";
+    }
+
+    public static String getPackage(final String name) {
+        final String binaryName = toBinaryName(name);
+
+        return binaryName.substring(0, binaryName.lastIndexOf('.'));
+    }
+
+    public static String getClassName(final String name) {
+        final String binaryName = toBinaryName(name);
+
+        return binaryName.substring(binaryName.lastIndexOf('.') + 1);
     }
 
     public static String[] getSupertypes(final ClassNode klass) {
@@ -543,7 +566,7 @@ public abstract class Shortcode implements Opcodes {
     }
 
     public static String composeMethodDescriptor(final String returnType, final String... parameterTypes) {
-        final StringBuilder descriptor = new StringBuilder("(");
+        final StringBuilder descriptor = new StringBuilder().append('(');
         final int parameterCount = parameterTypes.length;
 
         for (int i = 0; i != parameterCount; i++) {
@@ -563,25 +586,6 @@ public abstract class Shortcode implements Opcodes {
         final LabelNode end = new LabelNode();
         final int locals = in.maxLocals;
         AbstractInsnNode instruction = instructions.getFirst();
-        int opcode;
-
-        while (instruction != null) {
-            opcode = instruction.getOpcode();
-
-            if (isLoad(opcode) || isStore(opcode)) {
-                ((VarInsnNode) instruction).var += locals;
-            }
-
-            if (isReturn(instruction)) {
-                instructions.set(instruction, new JumpInsnNode(GOTO, end));
-            }
-
-            instruction = instruction.getNext();
-        }
-
-        instructions.add(end);
-
-        instruction = in.instructions.getFirst();
 
         while (instruction != null) {
             if (isReturn(instruction)) {
@@ -590,6 +594,112 @@ public abstract class Shortcode implements Opcodes {
 
             instruction = instruction.getNext();
         }
+    }
+
+    public static InsnList inline(final MethodInsnNode invocation) {
+        return inline(getMethod(invocation), invocation);
+    }
+
+    public static InsnList inline(final MethodInsnNode invocation, final MethodNode in) {
+        return inline(getMethod(invocation), in.instructions.getLast());
+    }
+
+    public static InsnList inline(final MethodInsnNode invocation, final InsnList in) {
+        return inline(getMethod(invocation), in.getLast());
+    }
+
+    public static InsnList inline(final MethodNode toInline, final MethodNode in) {
+        return inline(hasFlag(toInline.access, ACC_STATIC), toInline.instructions, Shortcode.getExplicitParameters(toInline), in.instructions.getLast());
+    }
+
+    public static InsnList inline(final MethodNode toInline, final InsnList in) {
+        return inline(hasFlag(toInline.access, ACC_STATIC), toInline.instructions, Shortcode.getExplicitParameters(toInline), in.getLast());
+    }
+
+    public static InsnList inline(final MethodNode toInline, final AbstractInsnNode inlineStart) {
+        return inline(hasFlag(toInline.access, ACC_STATIC), toInline.instructions, Shortcode.getExplicitParameters(toInline), inlineStart);
+    }
+
+    public static InsnList inline(final boolean isStatic, final InsnList instructions, List<String> parameters, final AbstractInsnNode inlineStart) {
+        final int parameterCount = parameters.size();
+        final Int2IntOpenHashMap newIndexes = new Int2IntOpenHashMap();
+        final InsnList inlined = new InsnList();
+        final int lastIndex = getNextVariableIndex(isStatic, inlineStart) + parameterCount - 1;
+        int index = parameterCount - 1;
+        int newIndex = lastIndex;
+
+        for (int i = parameterCount - 1; i >= 0; i--, index--, newIndex--) {
+            newIndexes.put(index, newIndex);
+
+            inlined.add(new VarInsnNode(Shortcode.getStoreOpcode(parameters.get(i)), newIndex));
+        }
+
+        AbstractInsnNode instruction = instructions.getFirst();
+        AbstractInsnNode previousReturn = null;
+        LabelNode end = null;
+
+        while (instruction != null) {
+            if (Shortcode.isReturn(instruction)) {
+                if (previousReturn != null) {
+                    if (end == null) {
+                        end = new LabelNode();
+                    }
+
+                    inlined.add(new JumpInsnNode(Opcodes.GOTO, end));
+                }
+
+                previousReturn = instruction;
+            } else if (Shortcode.isLoad(instruction) || Shortcode.isStore(instruction)) {
+                final VarInsnNode varInstruction = (VarInsnNode) Shortcode.clone(instruction);
+                varInstruction.var = newIndexes.get(varInstruction.var);
+
+                inlined.add(varInstruction);
+            } else {
+                inlined.add(Shortcode.clone(instruction));
+            }
+
+            instruction = instruction.getNext();
+        }
+
+        if (end != null) {
+            inlined.add(end);
+        }
+
+        return inlined;
+    }
+
+    public static int getNextVariableIndex(final MethodNode method) {
+        return getNextVariableIndex(hasFlag(method.access, ACC_STATIC), method.instructions.getLast());
+    }
+
+    public static int getNextVariableIndex(final boolean isStatic, final InsnList instructions) {
+        return getNextVariableIndex(isStatic, instructions.getLast());
+    }
+
+    public static int getNextVariableIndex(final boolean isStatic, AbstractInsnNode instruction) {
+        int index = -1;
+
+        while (instruction != null && instruction.getType() != AbstractInsnNode.FRAME) {
+            if (Shortcode.isStore(instruction)) {
+                final int var = ((VarInsnNode) instruction).var;
+
+                if (var > index) {
+                    index = var;
+                }
+            }
+
+            instruction = instruction.getPrevious();
+        }
+
+        if (index != -1) {
+            return index + 1;
+        }
+
+        if (isStatic) {
+            return 0;
+        }
+
+        return 1;
     }
 
     public static MethodNode copyMethod(final ClassNode klass, final MethodNode method) {
@@ -689,8 +799,30 @@ public abstract class Shortcode implements Opcodes {
                 return (T) new MultiANewArrayInsnNode(arrayInstruction.desc, arrayInstruction.dims);
             case AbstractInsnNode.FRAME:
                 final FrameNode frameNode = (FrameNode) instruction;
+                final List<Object> local = frameNode.local;
+                final List<Object> stack = frameNode.stack;
+                final int localSize;
+                final Object[] localArray;
+                final int stackSize;
+                final Object[] stackArray;
 
-                return (T) new FrameNode(frameNode.getOpcode(), frameNode.local.size(), frameNode.local.toArray(), frameNode.stack.size(), frameNode.stack.toArray());
+                if (local == null) {
+                    localSize = 0;
+                    localArray = null;
+                } else {
+                    localSize = local.size();
+                    localArray = local.toArray();
+                }
+
+                if (stack == null) {
+                    stackSize = 0;
+                    stackArray = null;
+                } else {
+                    stackSize = stack.size();
+                    stackArray = stack.toArray();
+                }
+
+                return (T) new FrameNode(frameNode.getOpcode(), localSize, localArray, stackSize, stackArray);
             case AbstractInsnNode.LINE:
                 final LineNumberNode lineNode = (LineNumberNode) instruction;
 
@@ -701,22 +833,26 @@ public abstract class Shortcode implements Opcodes {
     }
 
     public static ClassNode getClassNode(final Class<?> klass) {
-        try {
-            final ClassNode node = new ClassNode();
-            final ClassReader reader = new ClassReader(klass.getName());
-
-            reader.accept(node, 0);
-
-            return node;
-        } catch (final IOException exception) {
-            throw new RuntimeException(exception);
-        }
+        return getClassNode(klass.getName());
     }
 
     public static ClassNode getClassNode(final String className) {
         try {
             final ClassNode klass = new ClassNode();
             final ClassReader reader = new ClassReader(className);
+
+            reader.accept(klass, 0);
+
+            return klass;
+        } catch (final IOException exception) {
+            throw new RuntimeException(exception);
+        }
+    }
+
+    public static ClassNode getClassNode(final InputStream input) {
+        try {
+            final ClassNode klass = new ClassNode();
+            final ClassReader reader = new ClassReader(input);
 
             reader.accept(klass, 0);
 
@@ -754,36 +890,48 @@ public abstract class Shortcode implements Opcodes {
         return result;
     }
 
-    public static ReferenceArrayList<AbstractInsnNode> getInstructions(final ClassNode klass, final String method) {
+    public static InsnList getInstructions(final ClassNode klass, final String method) {
         return getInstructions(getFirstDeclaredMethod(klass, method));
     }
 
-    public static ReferenceArrayList<AbstractInsnNode> getInstructions(final MethodNode method) {
-        return new ReferenceArrayList<>(method.instructions.toArray());
+    public static InsnList getInstructions(final MethodNode method) {
+        return method.instructions;
     }
 
-    public static MethodNode tryGetFirstMethod(ClassNode klass, final String name) {
-        for (final MethodNode method : klass.methods) {
-            if (name.equals(method.name)) {
-                return method;
-            }
-        }
+    public static MethodNode getMethod(final MethodInsnNode invocation) {
+        return getMethod(invocation, ClassLoader.getSystemClassLoader());
+    }
 
-        if (klass.superName != null) {
+    public static MethodNode getMethod(final MethodInsnNode invocation, final ClassLoader loader) {
+        return getMethod(invocation, loader.getResourceAsStream(getLocation(invocation.owner)));
+    }
+
+    public static MethodNode getMethod(final MethodInsnNode invocation, final InputStream methodOwner) {
+        return getMethod(invocation, getClassNode(methodOwner));
+    }
+
+    @SuppressWarnings("ConstantConditions")
+    public static MethodNode getMethod(final MethodInsnNode invocation, final ClassNode methodOwner) {
+        final MethodInvocation key = new MethodInvocation(invocation);
+        final MethodNode method = methodCache.get(key);
+
+        if (method == null) {
             try {
-                final ClassReader reader = new ClassReader(klass.superName);
+                final List<MethodNode> methods = methodOwner.methods;
 
-                klass = new ClassNode();
+                for (MethodNode node : methods) {
+                    if (node.name.equals(invocation.name) && node.desc.equals(invocation.desc)) {
+                        methodCache.put(key, node);
 
-                reader.accept(klass, 0);
-
-                return tryGetFirstMethod(klass, name);
-            } catch (final IOException exception) {
-                throw new RuntimeException(exception);
+                        return node;
+                    }
+                }
+            } catch (final Throwable throwable) {
+                throw new RuntimeException(throwable);
             }
         }
 
-        return null;
+        return method;
     }
 
     public static MethodNode getFirstMethod(ClassNode klass, final String name) {
@@ -807,17 +955,7 @@ public abstract class Shortcode implements Opcodes {
             }
         }
 
-        throw new IllegalArgumentException(String.format("the given ClassNode does not contain method %s", name));
-    }
-
-    public static MethodNode tryGetFirstDeclaredMethod(final ClassNode klass, final String name) {
-        for (final MethodNode method : klass.methods) {
-            if (name.equals(method.name)) {
-                return method;
-            }
-        }
-
-        return null;
+        return (MethodNode) notFound;
     }
 
     public static MethodNode getFirstDeclaredMethod(final ClassNode klass, final String name) {
@@ -827,7 +965,7 @@ public abstract class Shortcode implements Opcodes {
             }
         }
 
-        throw new IllegalArgumentException(String.format("the given ClassNode does not contain method %s", name));
+        return (MethodNode) notFound;
     }
 
     public static ReferenceArrayList<MethodNode> getAllMethods(ClassNode klass) {
@@ -1017,12 +1155,12 @@ public abstract class Shortcode implements Opcodes {
     }
 
     public static <T> T getAnnotationValue(final List<AnnotationNode> annotations, final String annotationDescriptor, final String element, final T alternative) {
-        final AnnotationNode[] annotationArray = annotations.toArray(new AnnotationNode[0]);
         Object[] values;
 
-        for (int i = 0; i < annotationArray.length; i++) {
-            if (annotationDescriptor.equals(annotationArray[i].desc)) {
-                values = annotationArray[i].values.toArray();
+        for (int i = 0, size = annotations.size(); i < size; i++) {
+            final AnnotationNode annotation = annotations.get(i);
+            if (annotationDescriptor.equals(annotation.desc)) {
+                values = annotation.values.toArray();
 
                 for (int j = 0; j < values.length; j++) {
                     if (element.equals(values[j])) {
@@ -1035,6 +1173,31 @@ public abstract class Shortcode implements Opcodes {
         }
 
         return null;
+    }
+
+    public static boolean hasAnnotation(final List<AnnotationNode> annotations, final Class<? extends Annotation> type) {
+        return hasAnnotation(annotations, getDescriptor(type));
+    }
+
+    public static boolean hasAnnotation(final List<AnnotationNode> annotations, final String descriptor) {
+        return getAnnotation(annotations, descriptor) != null;
+    }
+
+    public static AnnotationNode getAnnotation(final List<AnnotationNode> annotations, final Class<? extends Annotation> type) {
+        return getAnnotation(annotations, getDescriptor(type));
+    }
+
+    public static AnnotationNode getAnnotation(final List<AnnotationNode> annotations, final String descriptor) {
+        if (annotations != null) {
+            for (final AnnotationNode annotation : annotations) {
+                if (annotation.desc.equals(descriptor)) {
+                    return annotation;
+                }
+            }
+
+        }
+
+        return (AnnotationNode) notFound;
     }
 
     public static <T> T getAnnotationValue(final AnnotationNode annotation, final String element, final T alternative) {

@@ -3,12 +3,31 @@ package user11681.shortcode;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.commons.annotation.Testable;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.FieldInsnNode;
+import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.IntInsnNode;
+import org.objectweb.asm.tree.MethodInsnNode;
 
 @Testable
 class ShortcodeTest {
+    @Test
+    void inlineTest() {
+        final InsnList insnTest = Shortcode.getInstructions(Shortcode.getClassNode(ShortcodeTest.class), "insnTest");
+        AbstractInsnNode instruction = insnTest.getFirst();
+
+        while (instruction != null) {
+            if (instruction.getOpcode() == Opcodes.INVOKESTATIC && ((MethodInsnNode) instruction).name.equals("equals")) {
+                break;
+            }
+
+            instruction = instruction.getNext();
+        }
+
+//        Debug.logInstructions(Shortcode.inline(Shortcode.getInstructions(Shortcode.getClassNode(Shortcode.class), "equals"), (MethodInsnNode) instruction));
+    }
+
     @Test
     void insnTest() {
         final InsnNode i0 = new InsnNode(Opcodes.IDIV);

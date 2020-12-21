@@ -1,12 +1,13 @@
 package user11681.shortcode.debug;
 
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;
 import org.apache.logging.log4j.Logger;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
@@ -60,7 +61,8 @@ public interface Debug extends Opcodes {
         final Logger logger = options.logger;
 
         for (int i = 0; i < lineCount; i++) {
-            logger.info(lineArray[i]);
+//            logger.info(lineArray[i]);
+            System.out.println(lineArray[i]);
         }
     }
 
@@ -135,7 +137,7 @@ public interface Debug extends Opcodes {
                         case T_SHORT:
                         case T_INT:
                         case T_LONG:
-                            return options.indentation + string + " " + Shortcode.ARRAY_TYPE_TO_STRING[intInstruction.operand];
+                            return options.indentation + string + " " + Shortcode.arrayTypeToString[intInstruction.operand];
                     }
                 }
 
@@ -215,7 +217,7 @@ public interface Debug extends Opcodes {
                 return options.indentation + string + multiANewArrayInstruction.desc + multiANewArrayInstruction.dims;
             case AbstractInsnNode.FRAME:
                 final FrameNode frame = (FrameNode) instruction;
-                final String type = options.uppercase ? Shortcode.FRAME_TYPE_TO_STRING.get(frame.type).toUpperCase() : Shortcode.FRAME_TYPE_TO_STRING.get(frame.type);
+                final String type = options.uppercase ? Shortcode.frameToString.get(frame.type).toUpperCase() : Shortcode.frameToString.get(frame.type);
 
                 switch (frame.type) {
                     case F_NEW:
