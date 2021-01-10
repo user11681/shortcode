@@ -9,6 +9,7 @@ import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.IntInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
+import user11681.shortcode.debug.Debug;
 
 @Testable
 class ShortcodeTest {
@@ -25,7 +26,7 @@ class ShortcodeTest {
             instruction = instruction.getNext();
         }
 
-//        Debug.logInstructions(Shortcode.inline(Shortcode.getInstructions(Shortcode.getClassNode(Shortcode.class), "equals"), (MethodInsnNode) instruction));
+        Debug.logInstructions(Shortcode.inline((MethodInsnNode) instruction, Shortcode.getInstructions(Shortcode.getFirstMethod(Shortcode.getClassNode(Shortcode.class), "equals"))));
     }
 
     @Test
