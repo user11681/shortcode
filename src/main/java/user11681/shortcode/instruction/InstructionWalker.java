@@ -21,15 +21,15 @@ public class InstructionWalker implements Opcodes {
 
     public AbstractInsnNode instruction;
 
-    public InstructionWalker(final MethodNode method) {
+    public InstructionWalker(MethodNode method) {
         this.instruction = method.instructions.getFirst();
     }
 
-    public InstructionWalker(final InsnList instructions) {
+    public InstructionWalker(InsnList instructions) {
         this.instruction = instructions.getFirst();
     }
 
-    public InstructionWalker(final AbstractInsnNode firstInstruction) {
+    public InstructionWalker(AbstractInsnNode firstInstruction) {
         this.instruction = firstInstruction;
     }
 
@@ -599,7 +599,7 @@ public class InstructionWalker implements Opcodes {
         return this.instruction =  this.instruction.getPrevious();
     }*/
 
-    private void walk(final MultiANewArrayInsnNode instruction) {
+    private void walk(MultiANewArrayInsnNode instruction) {
         for (int i = 0; i < instruction.dims + 1; i++) {
             this.operands.pop();
         }
@@ -607,8 +607,8 @@ public class InstructionWalker implements Opcodes {
         this.operands.push(instruction.desc);
     }
 
-    private void walk(final MethodInsnNode instruction) {
-        for (final String parameter : Shortcode.getExplicitParameters(instruction)) {
+    private void walk(MethodInsnNode instruction) {
+        for (String parameter : Shortcode.getExplicitParameters(instruction)) {
             this.pop(parameter);
         }
 
@@ -623,19 +623,19 @@ public class InstructionWalker implements Opcodes {
         }
     }
 
-    private void walk(final InvokeDynamicInsnNode instruction) {
-        for (final String parameter : Shortcode.getExplicitParameters(instruction)) {
+    private void walk(InvokeDynamicInsnNode instruction) {
+        for (String parameter : Shortcode.getExplicitParameters(instruction)) {
             this.pop(parameter);
         }
 
         this.push(Shortcode.getReturnType(instruction));
     }
 
-    private void dup(final int x) {
+    private void dup(int x) {
         this.operands.add(this.operands.size() - 1 - x, this.operands.top());
     }
 
-    private void dup2(final int x) {
+    private void dup2(int x) {
         final int end = this.operands.size() - 1;
 
         this.operands.add(end - 1 - x, this.operands.get(end - 1));
@@ -648,7 +648,7 @@ public class InstructionWalker implements Opcodes {
         this.operands.set(end, this.operands.set(end - 1, this.operands.top()));
     }
 
-    private void push(final String descriptor) {
+    private void push(String descriptor) {
         this.operands.push(descriptor);
 
         if ("J".equals(descriptor) || "D".equals(descriptor)) {
@@ -660,7 +660,7 @@ public class InstructionWalker implements Opcodes {
         this.pop(this.operands.top());
     }
 
-    private void pop(final String descriptor) {
+    private void pop(String descriptor) {
         this.operands.pop();
 
         if ("J".equals(descriptor) || "D".equals(descriptor)) {

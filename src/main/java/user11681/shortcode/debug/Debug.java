@@ -34,27 +34,27 @@ import user11681.shortcode.Shortcode;
 public interface Debug extends Opcodes {
     DebugOptions DEFAULT_OPTIONS = DebugOptions.defaultOptions();
 
-    static void logInstructions(final MethodNode method) {
+    static void logInstructions(MethodNode method) {
         logInstructions(method.instructions.iterator(), DEFAULT_OPTIONS);
     }
 
-    static void logInstructions(final MethodNode method, final DebugOptions options) {
+    static void logInstructions(MethodNode method, DebugOptions options) {
         logInstructions(method.instructions.iterator(), options);
     }
 
-    static void logInstructions(final InsnList instructions) {
+    static void logInstructions(InsnList instructions) {
         logInstructions(instructions.iterator(), DEFAULT_OPTIONS);
     }
 
-    static void logInstructions(final InsnList instructions, final DebugOptions options) {
+    static void logInstructions(InsnList instructions, DebugOptions options) {
         logInstructions(instructions.iterator(), options);
     }
 
-    static void logInstructions(final Iterator<AbstractInsnNode> instructions) {
+    static void logInstructions(Iterator<AbstractInsnNode> instructions) {
         logInstructions(instructions, DEFAULT_OPTIONS);
     }
 
-    static void logInstructions(final Iterator<AbstractInsnNode> instructions, DebugOptions options) {
+    static void logInstructions(Iterator<AbstractInsnNode> instructions, DebugOptions options) {
         final ObjectArrayList<String> lines = toString(instructions, options);
         final String[] lineArray = lines.elements();
         final int lineCount = lines.size();
@@ -66,27 +66,27 @@ public interface Debug extends Opcodes {
         }
     }
 
-    static ObjectArrayList<String> toString(final MethodNode method) {
+    static ObjectArrayList<String> toString(MethodNode method) {
         return toString(method.instructions.iterator(), DEFAULT_OPTIONS);
     }
 
-    static ObjectArrayList<String> toString(final MethodNode method, final DebugOptions options) {
+    static ObjectArrayList<String> toString(MethodNode method, DebugOptions options) {
         return toString(method.instructions.iterator(), options);
     }
 
-    static ObjectArrayList<String> toString(final InsnList instructions) {
+    static ObjectArrayList<String> toString(InsnList instructions) {
         return toString(instructions.iterator(), DEFAULT_OPTIONS);
     }
 
-    static ObjectArrayList<String> toString(final InsnList instructions, final DebugOptions options) {
+    static ObjectArrayList<String> toString(InsnList instructions, DebugOptions options) {
         return toString(instructions.iterator(), options);
     }
 
-    static ObjectArrayList<String> toString(final Iterator<AbstractInsnNode> instructions) {
+    static ObjectArrayList<String> toString(Iterator<AbstractInsnNode> instructions) {
         return toString(instructions, DEFAULT_OPTIONS);
     }
 
-    static ObjectArrayList<String> toString(Iterator<AbstractInsnNode> instructions, final DebugOptions options) {
+    static ObjectArrayList<String> toString(Iterator<AbstractInsnNode> instructions, DebugOptions options) {
         final ObjectArrayList<String> lines = ObjectArrayList.wrap(new String[20], 0);
         final Reference2IntOpenHashMap<AbstractInsnNode> labelToIndex = new Reference2IntOpenHashMap<>();
         String[] lineArray;
@@ -108,12 +108,12 @@ public interface Debug extends Opcodes {
         return lines;
     }
 
-    static String nodeToString(final AbstractInsnNode instruction, final Map<AbstractInsnNode, Integer> labelToIndex) {
+    static String nodeToString(AbstractInsnNode instruction, Map<AbstractInsnNode, Integer> labelToIndex) {
         return nodeToString(instruction, labelToIndex, DEFAULT_OPTIONS);
     }
 
-    static String nodeToString(final AbstractInsnNode instruction, final Map<AbstractInsnNode, Integer> labelToIndex, final DebugOptions options) {
-        final Function<? super AbstractInsnNode, ? extends Integer> labelToIndexMapper = (final AbstractInsnNode irrelevant) -> labelToIndex.size();
+    static String nodeToString(AbstractInsnNode instruction, Map<AbstractInsnNode, Integer> labelToIndex, DebugOptions options) {
+        final Function<? super AbstractInsnNode, ? extends Integer> labelToIndexMapper = (AbstractInsnNode irrelevant) -> labelToIndex.size();
         final int opcode = instruction.getOpcode();
         final String string = opcode >= 0
             ? options.uppercase
@@ -241,7 +241,7 @@ public interface Debug extends Opcodes {
         return "UNKNOWN";
     }
 
-    static String stackToString(final List<Object> stack) {
+    static String stackToString(List<Object> stack) {
         final StringBuilder builder = new StringBuilder("[");
         final int elementCount = stack.size();
 
@@ -258,7 +258,7 @@ public interface Debug extends Opcodes {
         return builder.toString();
     }
 
-    static String frameElementToString(final Object element) {
+    static String frameElementToString(Object element) {
         if (element instanceof Integer) {
             if (element == TOP) {
                 return "top";

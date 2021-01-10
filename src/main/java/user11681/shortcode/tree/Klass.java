@@ -14,25 +14,25 @@ public class Klass extends ClassNode {
         super();
     }
 
-    public void read(final byte[] classFile, final int parsingOptions) {
+    public void read(byte[] classFile, int parsingOptions) {
         this.reader = new ClassReader(classFile);
         this.reader.accept(this, parsingOptions);
     }
 
-    public void read(final InputStream inputStream, final int parsingOptions) {
+    public void read(InputStream inputStream, int parsingOptions) {
         try {
             this.reader = new ClassReader(inputStream);
             this.reader.accept(this, parsingOptions);
-        } catch (final IOException throwable) {
+        } catch (IOException throwable) {
             throw new RuntimeException(throwable);
         }
     }
 
-    public void read(final String className, final int parsingOptions) {
+    public void read(String className, int parsingOptions) {
         try {
             this.reader = new ClassReader(className);
             this.reader.accept(this, parsingOptions);
-        } catch (final IOException throwable) {
+        } catch (IOException throwable) {
             throw new RuntimeException(throwable);
         }
     }
@@ -41,7 +41,7 @@ public class Klass extends ClassNode {
         return this.toByteArray(ClassWriter.COMPUTE_FRAMES);
     }
 
-    public byte[] toByteArray(final int flags) {
+    public byte[] toByteArray(int flags) {
         this.writer = new ClassWriter(flags);
         this.accept(this.writer);
 

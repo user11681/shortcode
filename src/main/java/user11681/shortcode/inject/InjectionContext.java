@@ -8,11 +8,11 @@ public abstract class InjectionContext {
 //    public static final InjectionPoint END =
     public final InjectionOffset offset;
 
-    public InjectionContext(final InjectionOffset offset) {
+    public InjectionContext(InjectionOffset offset) {
         this.offset = offset;
     }
 
-    public ReferenceArrayList<AbstractInsnNode> findMatches(final InsnList instructions) {
+    public ReferenceArrayList<AbstractInsnNode> findMatches(InsnList instructions) {
         final ReferenceArrayList<AbstractInsnNode> matches = ReferenceArrayList.wrap(new AbstractInsnNode[3]);
 
         AbstractInsnNode instruction = instructions.getFirst();
@@ -28,5 +28,5 @@ public abstract class InjectionContext {
         return matches;
     }
 
-    public abstract boolean isMatch(final AbstractInsnNode instruction);
+    public abstract boolean isMatch(AbstractInsnNode instruction);
 }

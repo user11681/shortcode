@@ -1,5 +1,7 @@
 package user11681.shortcode.instruction;
 
+import java.util.HashMap;
+import java.util.function.Function;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
@@ -23,6 +25,10 @@ import org.objectweb.asm.tree.VarInsnNode;
 
 @SuppressWarnings("unused")
 public final class ExtendedInsnList extends InsnList {
+    private static final Function<String, Label> labelConstructor = label -> new Label();
+
+    private final HashMap<String, Label> labels = new HashMap<>();
+
     public ExtendedInsnList() {}
 
     public ExtendedInsnList(AbstractInsnNode... instructions) {
@@ -33,7 +39,7 @@ public final class ExtendedInsnList extends InsnList {
         super.add(instructions);
     }
 
-    private static Object[] getLabelNodes(final Object[] objects) {
+    private static Object[] getLabelNodes(Object[] objects) {
         final Object[] labelNodes = new Object[objects.length];
         Object object;
 
@@ -50,7 +56,7 @@ public final class ExtendedInsnList extends InsnList {
         return labelNodes;
     }
 
-    private static LabelNode[] getLabelNodes(final Label[] labels) {
+    private static LabelNode[] getLabelNodes(Label[] labels) {
         final LabelNode[] labelNodes = new LabelNode[labels.length];
 
         for (int i = 0, n = labels.length; i < n; ++i) {
@@ -60,7 +66,7 @@ public final class ExtendedInsnList extends InsnList {
         return labelNodes;
     }
 
-    private static LabelNode getLabelNode(final Label label) {
+    private static LabelNode getLabelNode(Label label) {
         return (LabelNode) (label.info == null ? label.info = new LabelNode() : label.info);
     }
 
@@ -76,1143 +82,853 @@ public final class ExtendedInsnList extends InsnList {
         }
     }
 
-    public final ExtendedInsnList frame(final int type, final int numLocal, final Object[] local, final int numStack, final Object[] stack) {
-        super.add(new FrameNode(
+    public final ExtendedInsnList frame(int type, int numLocal, Object[] local, int numStack, Object[] stack) {
+        return this.append(new FrameNode(
             type,
             numLocal,
             local == null ? null : getLabelNodes(local),
             numStack,
             stack == null ? null : getLabelNodes(stack)
         ));
-
-        return this;
     }
 
     /**
      * @see InsnNode
      */
-    public final ExtendedInsnList insn(final int opcode) {
-        super.add(new InsnNode(opcode));
-
-        return this;
+    public final ExtendedInsnList insn(int opcode) {
+        return this.append(new InsnNode(opcode));
     }
 
     public final ExtendedInsnList nop() {
-        super.add(new InsnNode(Opcodes.NOP));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.NOP));
     }
 
     public final ExtendedInsnList aconst_null() {
-        super.add(new InsnNode(Opcodes.ACONST_NULL));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.ACONST_NULL));
     }
 
     public final ExtendedInsnList iconst_m1() {
-        super.add(new InsnNode(Opcodes.ICONST_M1));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.ICONST_M1));
     }
 
     public final ExtendedInsnList iconst_0() {
-        super.add(new InsnNode(Opcodes.ICONST_0));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.ICONST_0));
     }
 
     public final ExtendedInsnList iconst_1() {
-        super.add(new InsnNode(Opcodes.ICONST_1));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.ICONST_1));
     }
 
     public final ExtendedInsnList iconst_2() {
-        super.add(new InsnNode(Opcodes.ICONST_2));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.ICONST_2));
     }
 
     public final ExtendedInsnList iconst_3() {
-        super.add(new InsnNode(Opcodes.ICONST_3));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.ICONST_3));
     }
 
     public final ExtendedInsnList iconst_4() {
-        super.add(new InsnNode(Opcodes.ICONST_4));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.ICONST_4));
     }
 
     public final ExtendedInsnList iconst_5() {
-        super.add(new InsnNode(Opcodes.ICONST_5));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.ICONST_5));
     }
 
     public final ExtendedInsnList lconst_0() {
-        super.add(new InsnNode(Opcodes.LCONST_0));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.LCONST_0));
     }
 
     public final ExtendedInsnList lconst_1() {
-        super.add(new InsnNode(Opcodes.LCONST_1));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.LCONST_1));
     }
 
     public final ExtendedInsnList fconst_0() {
-        super.add(new InsnNode(Opcodes.FCONST_0));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.FCONST_0));
     }
 
     public final ExtendedInsnList fconst_1() {
-        super.add(new InsnNode(Opcodes.FCONST_1));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.FCONST_1));
     }
 
     public final ExtendedInsnList fconst_2() {
-        super.add(new InsnNode(Opcodes.FCONST_2));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.FCONST_2));
     }
 
     public final ExtendedInsnList dconst_0() {
-        super.add(new InsnNode(Opcodes.DCONST_0));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.DCONST_0));
     }
 
     public final ExtendedInsnList dconst_1() {
-        super.add(new InsnNode(Opcodes.DCONST_1));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.DCONST_1));
     }
 
     public final ExtendedInsnList iaload() {
-        super.add(new InsnNode(Opcodes.IALOAD));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.IALOAD));
     }
 
     public final ExtendedInsnList laload() {
-        super.add(new InsnNode(Opcodes.LALOAD));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.LALOAD));
     }
 
     public final ExtendedInsnList faload() {
-        super.add(new InsnNode(Opcodes.FALOAD));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.FALOAD));
     }
 
     public final ExtendedInsnList daload() {
-        super.add(new InsnNode(Opcodes.DALOAD));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.DALOAD));
     }
 
     public final ExtendedInsnList aaload() {
-        super.add(new InsnNode(Opcodes.AALOAD));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.AALOAD));
     }
 
     public final ExtendedInsnList baload() {
-        super.add(new InsnNode(Opcodes.BALOAD));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.BALOAD));
     }
 
     public final ExtendedInsnList caload() {
-        super.add(new InsnNode(Opcodes.CALOAD));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.CALOAD));
     }
 
     public final ExtendedInsnList saload() {
-        super.add(new InsnNode(Opcodes.SALOAD));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.SALOAD));
     }
 
     public final ExtendedInsnList iastore() {
-        super.add(new InsnNode(Opcodes.IASTORE));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.IASTORE));
     }
 
     public final ExtendedInsnList lastore() {
-        super.add(new InsnNode(Opcodes.LASTORE));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.LASTORE));
     }
 
     public final ExtendedInsnList fastore() {
-        super.add(new InsnNode(Opcodes.FASTORE));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.FASTORE));
     }
 
     public final ExtendedInsnList dastore() {
-        super.add(new InsnNode(Opcodes.DASTORE));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.DASTORE));
     }
 
     public final ExtendedInsnList aastore() {
-        super.add(new InsnNode(Opcodes.AASTORE));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.AASTORE));
     }
 
     public final ExtendedInsnList bastore() {
-        super.add(new InsnNode(Opcodes.BASTORE));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.BASTORE));
     }
 
     public final ExtendedInsnList castore() {
-        super.add(new InsnNode(Opcodes.CASTORE));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.CASTORE));
     }
 
     public final ExtendedInsnList sastore() {
-        super.add(new InsnNode(Opcodes.SASTORE));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.SASTORE));
     }
 
     public final ExtendedInsnList pop() {
-        super.add(new InsnNode(Opcodes.POP));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.POP));
     }
 
     public final ExtendedInsnList pop2() {
-        super.add(new InsnNode(Opcodes.POP2));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.POP2));
     }
 
     public final ExtendedInsnList dup() {
-        super.add(new InsnNode(Opcodes.DUP));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.DUP));
     }
 
     public final ExtendedInsnList dup_x1() {
-        super.add(new InsnNode(Opcodes.DUP_X1));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.DUP_X1));
     }
 
     public final ExtendedInsnList dup_x2() {
-        super.add(new InsnNode(Opcodes.DUP_X2));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.DUP_X2));
     }
 
     public final ExtendedInsnList dup2() {
-        super.add(new InsnNode(Opcodes.DUP2));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.DUP2));
     }
 
     public final ExtendedInsnList dup2_x1() {
-        super.add(new InsnNode(Opcodes.DUP2_X1));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.DUP2_X1));
     }
 
     public final ExtendedInsnList dup2_x2() {
-        super.add(new InsnNode(Opcodes.DUP2_X2));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.DUP2_X2));
     }
 
     public final ExtendedInsnList swap() {
-        super.add(new InsnNode(Opcodes.SWAP));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.SWAP));
     }
 
     public final ExtendedInsnList iadd() {
-        super.add(new InsnNode(Opcodes.IADD));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.IADD));
     }
 
     public final ExtendedInsnList ladd() {
-        super.add(new InsnNode(Opcodes.LADD));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.LADD));
     }
 
     public final ExtendedInsnList fadd() {
-        super.add(new InsnNode(Opcodes.FADD));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.FADD));
     }
 
     public final ExtendedInsnList dadd() {
-        super.add(new InsnNode(Opcodes.DADD));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.DADD));
     }
 
     public final ExtendedInsnList isub() {
-        super.add(new InsnNode(Opcodes.ISUB));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.ISUB));
     }
 
     public final ExtendedInsnList lsub() {
-        super.add(new InsnNode(Opcodes.LSUB));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.LSUB));
     }
 
     public final ExtendedInsnList fsub() {
-        super.add(new InsnNode(Opcodes.FSUB));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.FSUB));
     }
 
     public final ExtendedInsnList dsub() {
-        super.add(new InsnNode(Opcodes.DSUB));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.DSUB));
     }
 
     public final ExtendedInsnList imul() {
-        super.add(new InsnNode(Opcodes.IMUL));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.IMUL));
     }
 
     public final ExtendedInsnList lmul() {
-        super.add(new InsnNode(Opcodes.LMUL));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.LMUL));
     }
 
     public final ExtendedInsnList fmul() {
-        super.add(new InsnNode(Opcodes.FMUL));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.FMUL));
     }
 
     public final ExtendedInsnList dmul() {
-        super.add(new InsnNode(Opcodes.DMUL));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.DMUL));
     }
 
     public final ExtendedInsnList idiv() {
-        super.add(new InsnNode(Opcodes.IDIV));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.IDIV));
     }
 
     public final ExtendedInsnList ldiv() {
-        super.add(new InsnNode(Opcodes.LDIV));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.LDIV));
     }
 
     public final ExtendedInsnList fdiv() {
-        super.add(new InsnNode(Opcodes.FDIV));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.FDIV));
     }
 
     public final ExtendedInsnList ddiv() {
-        super.add(new InsnNode(Opcodes.DDIV));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.DDIV));
     }
 
     public final ExtendedInsnList irem() {
-        super.add(new InsnNode(Opcodes.IREM));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.IREM));
     }
 
     public final ExtendedInsnList lrem() {
-        super.add(new InsnNode(Opcodes.LREM));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.LREM));
     }
 
     public final ExtendedInsnList frem() {
-        super.add(new InsnNode(Opcodes.FREM));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.FREM));
     }
 
     public final ExtendedInsnList drem() {
-        super.add(new InsnNode(Opcodes.DREM));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.DREM));
     }
 
     public final ExtendedInsnList ineg() {
-        super.add(new InsnNode(Opcodes.INEG));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.INEG));
     }
 
     public final ExtendedInsnList lneg() {
-        super.add(new InsnNode(Opcodes.LNEG));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.LNEG));
     }
 
     public final ExtendedInsnList fneg() {
-        super.add(new InsnNode(Opcodes.FNEG));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.FNEG));
     }
 
     public final ExtendedInsnList dneg() {
-        super.add(new InsnNode(Opcodes.DNEG));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.DNEG));
     }
 
     public final ExtendedInsnList ishl() {
-        super.add(new InsnNode(Opcodes.ISHL));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.ISHL));
     }
 
     public final ExtendedInsnList lshl() {
-        super.add(new InsnNode(Opcodes.LSHL));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.LSHL));
     }
 
     public final ExtendedInsnList ishr() {
-        super.add(new InsnNode(Opcodes.ISHR));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.ISHR));
     }
 
     public final ExtendedInsnList lshr() {
-        super.add(new InsnNode(Opcodes.LSHR));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.LSHR));
     }
 
     public final ExtendedInsnList iushr() {
-        super.add(new InsnNode(Opcodes.IUSHR));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.IUSHR));
     }
 
     public final ExtendedInsnList lushr() {
-        super.add(new InsnNode(Opcodes.LUSHR));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.LUSHR));
     }
 
     public final ExtendedInsnList iand() {
-        super.add(new InsnNode(Opcodes.IAND));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.IAND));
     }
 
     public final ExtendedInsnList land() {
-        super.add(new InsnNode(Opcodes.LAND));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.LAND));
     }
 
     public final ExtendedInsnList ior() {
-        super.add(new InsnNode(Opcodes.IOR));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.IOR));
     }
 
     public final ExtendedInsnList lor() {
-        super.add(new InsnNode(Opcodes.LOR));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.LOR));
     }
 
     public final ExtendedInsnList ixor() {
-        super.add(new InsnNode(Opcodes.IXOR));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.IXOR));
     }
 
     public final ExtendedInsnList lxor() {
-        super.add(new InsnNode(Opcodes.LXOR));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.LXOR));
     }
 
     public final ExtendedInsnList i2l() {
-        super.add(new InsnNode(Opcodes.I2L));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.I2L));
     }
 
     public final ExtendedInsnList i2f() {
-        super.add(new InsnNode(Opcodes.I2F));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.I2F));
     }
 
     public final ExtendedInsnList i2d() {
-        super.add(new InsnNode(Opcodes.I2D));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.I2D));
     }
 
     public final ExtendedInsnList l2i() {
-        super.add(new InsnNode(Opcodes.L2I));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.L2I));
     }
 
     public final ExtendedInsnList l2f() {
-        super.add(new InsnNode(Opcodes.L2F));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.L2F));
     }
 
     public final ExtendedInsnList l2d() {
-        super.add(new InsnNode(Opcodes.L2D));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.L2D));
     }
 
     public final ExtendedInsnList f2i() {
-        super.add(new InsnNode(Opcodes.F2I));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.F2I));
     }
 
     public final ExtendedInsnList f2l() {
-        super.add(new InsnNode(Opcodes.F2L));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.F2L));
     }
 
     public final ExtendedInsnList f2d() {
-        super.add(new InsnNode(Opcodes.F2D));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.F2D));
     }
 
     public final ExtendedInsnList d2i() {
-        super.add(new InsnNode(Opcodes.D2I));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.D2I));
     }
 
     public final ExtendedInsnList d2l() {
-        super.add(new InsnNode(Opcodes.D2L));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.D2L));
     }
 
     public final ExtendedInsnList d2f() {
-        super.add(new InsnNode(Opcodes.D2F));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.D2F));
     }
 
     public final ExtendedInsnList i2b() {
-        super.add(new InsnNode(Opcodes.I2B));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.I2B));
     }
 
     public final ExtendedInsnList i2c() {
-        super.add(new InsnNode(Opcodes.I2C));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.I2C));
     }
 
     public final ExtendedInsnList i2s() {
-        super.add(new InsnNode(Opcodes.I2S));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.I2S));
     }
 
     public final ExtendedInsnList lcmp() {
-        super.add(new InsnNode(Opcodes.LCMP));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.LCMP));
     }
 
     public final ExtendedInsnList fcmpl() {
-        super.add(new InsnNode(Opcodes.FCMPL));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.FCMPL));
     }
 
     public final ExtendedInsnList fcmpg() {
-        super.add(new InsnNode(Opcodes.FCMPG));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.FCMPG));
     }
 
     public final ExtendedInsnList dcmpl() {
-        super.add(new InsnNode(Opcodes.DCMPL));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.DCMPL));
     }
 
     public final ExtendedInsnList dcmpg() {
-        super.add(new InsnNode(Opcodes.DCMPG));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.DCMPG));
     }
 
     public final ExtendedInsnList ireturn() {
-        super.add(new InsnNode(Opcodes.IRETURN));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.IRETURN));
     }
 
     public final ExtendedInsnList lreturn() {
-        super.add(new InsnNode(Opcodes.LRETURN));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.LRETURN));
     }
 
     public final ExtendedInsnList freturn() {
-        super.add(new InsnNode(Opcodes.FRETURN));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.FRETURN));
     }
 
     public final ExtendedInsnList dreturn() {
-        super.add(new InsnNode(Opcodes.DRETURN));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.DRETURN));
     }
 
     public final ExtendedInsnList areturn() {
-        super.add(new InsnNode(Opcodes.ARETURN));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.ARETURN));
     }
 
     public final ExtendedInsnList vreturn() {
-        super.add(new InsnNode(Opcodes.RETURN));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.RETURN));
     }
 
     public final ExtendedInsnList arraylength() {
-        super.add(new InsnNode(Opcodes.ARRAYLENGTH));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.ARRAYLENGTH));
     }
 
     public final ExtendedInsnList athrow() {
-        super.add(new InsnNode(Opcodes.ATHROW));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.ATHROW));
     }
 
     public final ExtendedInsnList monitorenter() {
-        super.add(new InsnNode(Opcodes.MONITORENTER));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.MONITORENTER));
     }
 
     public final ExtendedInsnList monitorexit() {
-        super.add(new InsnNode(Opcodes.MONITOREXIT));
-
-        return this;
+        return this.append(new InsnNode(Opcodes.MONITOREXIT));
     }
 
     /**
      * @see IntInsnNode
      */
-    public final ExtendedInsnList intInsn(final int opcode, final int operand) {
-        super.add(new IntInsnNode(opcode, operand));
-
-        return this;
+    public final ExtendedInsnList intInsn(int opcode, int operand) {
+        return this.append(new IntInsnNode(opcode, operand));
     }
 
     public final ExtendedInsnList bipush(int operand) {
-        super.add(new IntInsnNode(Opcodes.BIPUSH, operand));
-
-        return this;
+        return this.append(new IntInsnNode(Opcodes.BIPUSH, operand));
     }
 
     public final ExtendedInsnList sipush(int operand) {
-        super.add(new IntInsnNode(Opcodes.SIPUSH, operand));
-
-        return this;
+        return this.append(new IntInsnNode(Opcodes.SIPUSH, operand));
     }
 
     public final ExtendedInsnList newarray(int operand) {
-        super.add(new IntInsnNode(Opcodes.NEWARRAY, operand));
-
-        return this;
+        return this.append(new IntInsnNode(Opcodes.NEWARRAY, operand));
     }
 
     /**
      * @see VarInsnNode
      */
-    public final ExtendedInsnList varInsn(final int opcode, final int var) {
-        super.add(new VarInsnNode(opcode, var));
-
-        return this;
+    public final ExtendedInsnList varInsn(int opcode, int var) {
+        return this.append(new VarInsnNode(opcode, var));
     }
 
     public final ExtendedInsnList iload(int var) {
-        super.add(new VarInsnNode(Opcodes.ILOAD, var));
-
-        return this;
+        return this.append(new VarInsnNode(Opcodes.ILOAD, var));
     }
 
     public final ExtendedInsnList lload(int var) {
-        super.add(new VarInsnNode(Opcodes.LLOAD, var));
-
-        return this;
+        return this.append(new VarInsnNode(Opcodes.LLOAD, var));
     }
 
     public final ExtendedInsnList fload(int var) {
-        super.add(new VarInsnNode(Opcodes.FLOAD, var));
-
-        return this;
+        return this.append(new VarInsnNode(Opcodes.FLOAD, var));
     }
 
     public final ExtendedInsnList dload(int var) {
-        super.add(new VarInsnNode(Opcodes.DLOAD, var));
-
-        return this;
+        return this.append(new VarInsnNode(Opcodes.DLOAD, var));
     }
 
     public final ExtendedInsnList aload(int var) {
-        super.add(new VarInsnNode(Opcodes.ALOAD, var));
-
-        return this;
+        return this.append(new VarInsnNode(Opcodes.ALOAD, var));
     }
 
     public final ExtendedInsnList istore(int var) {
-        super.add(new VarInsnNode(Opcodes.ISTORE, var));
-
-        return this;
+        return this.append(new VarInsnNode(Opcodes.ISTORE, var));
     }
 
     public final ExtendedInsnList lstore(int var) {
-        super.add(new VarInsnNode(Opcodes.LSTORE, var));
-
-        return this;
+        return this.append(new VarInsnNode(Opcodes.LSTORE, var));
     }
 
     public final ExtendedInsnList fstore(int var) {
-        super.add(new VarInsnNode(Opcodes.FSTORE, var));
-
-        return this;
+        return this.append(new VarInsnNode(Opcodes.FSTORE, var));
     }
 
     public final ExtendedInsnList dstore(int var) {
-        super.add(new VarInsnNode(Opcodes.DSTORE, var));
-
-        return this;
+        return this.append(new VarInsnNode(Opcodes.DSTORE, var));
     }
 
     public final ExtendedInsnList astore(int var) {
-        super.add(new VarInsnNode(Opcodes.ASTORE, var));
-
-        return this;
+        return this.append(new VarInsnNode(Opcodes.ASTORE, var));
     }
 
     public final ExtendedInsnList ret(int var) {
-        super.add(new VarInsnNode(Opcodes.RET, var));
-
-        return this;
+        return this.append(new VarInsnNode(Opcodes.RET, var));
     }
 
     /**
      * @see TypeInsnNode
      */
-    public final ExtendedInsnList type(final int opcode, final String type) {
-        super.add(new TypeInsnNode(opcode, type));
-
-        return this;
+    public final ExtendedInsnList type(int opcode, String type) {
+        return this.append(new TypeInsnNode(opcode, type));
     }
 
     public final ExtendedInsnList anew(String descriptor) {
-        super.add(new TypeInsnNode(Opcodes.NEW, descriptor));
-
-        return this;
+        return this.append(new TypeInsnNode(Opcodes.NEW, descriptor));
     }
 
     public final ExtendedInsnList anewarray(String descriptor) {
-        super.add(new TypeInsnNode(Opcodes.ANEWARRAY, descriptor));
-
-        return this;
+        return this.append(new TypeInsnNode(Opcodes.ANEWARRAY, descriptor));
     }
 
     public final ExtendedInsnList checkcast(String descriptor) {
-        super.add(new TypeInsnNode(Opcodes.CHECKCAST, descriptor));
-
-        return this;
+        return this.append(new TypeInsnNode(Opcodes.CHECKCAST, descriptor));
     }
 
     public final ExtendedInsnList instance(String descriptor) {
-        super.add(new TypeInsnNode(Opcodes.INSTANCEOF, descriptor));
-
-        return this;
+        return this.append(new TypeInsnNode(Opcodes.INSTANCEOF, descriptor));
     }
 
     /**
      * @see FieldInsnNode
      */
-    public final ExtendedInsnList field(final int opcode, final String owner, final String name, final String descriptor) {
-        super.add(new FieldInsnNode(opcode, owner, name, descriptor));
-
-        return this;
+    public final ExtendedInsnList field(int opcode, String owner, String name, String descriptor) {
+        return this.append(new FieldInsnNode(opcode, owner, name, descriptor));
     }
 
     public final ExtendedInsnList getstatic(String owner, String name, String descriptor) {
-        super.add(new FieldInsnNode(Opcodes.GETSTATIC, owner, name, descriptor));
-
-        return this;
+        return this.append(new FieldInsnNode(Opcodes.GETSTATIC, owner, name, descriptor));
     }
 
     public final ExtendedInsnList putstatic(String owner, String name, String descriptor) {
-        super.add(new FieldInsnNode(Opcodes.PUTSTATIC, owner, name, descriptor));
-
-        return this;
+        return this.append(new FieldInsnNode(Opcodes.PUTSTATIC, owner, name, descriptor));
     }
 
     public final ExtendedInsnList getfield(String owner, String name, String descriptor) {
-        super.add(new FieldInsnNode(Opcodes.GETFIELD, owner, name, descriptor));
-
-        return this;
+        return this.append(new FieldInsnNode(Opcodes.GETFIELD, owner, name, descriptor));
     }
 
     public final ExtendedInsnList putfield(String owner, String name, String descriptor) {
-        super.add(new FieldInsnNode(Opcodes.PUTFIELD, owner, name, descriptor));
-
-        return this;
+        return this.append(new FieldInsnNode(Opcodes.PUTFIELD, owner, name, descriptor));
     }
 
     /**
      * @see MethodInsnNode
      */
-    public final ExtendedInsnList method(final int opcode, final String owner, final String name, final String descriptor, final boolean isInterface) {
-        super.add(new MethodInsnNode(opcode, owner, name, descriptor, isInterface));
-
-        return this;
+    public final ExtendedInsnList method(int opcode, String owner, String name, String descriptor, boolean isInterface) {
+        return this.append(new MethodInsnNode(opcode, owner, name, descriptor, isInterface));
     }
 
     public final ExtendedInsnList invokevirtual(String owner, String name, String descriptor) {
-        super.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, owner, name, descriptor, false));
-
-        return this;
+        return this.append(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, owner, name, descriptor, false));
     }
 
     public final ExtendedInsnList invokespecial(String owner, String name, String descriptor) {
-        super.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, owner, name, descriptor, false));
-
-        return this;
+        return this.append(new MethodInsnNode(Opcodes.INVOKESPECIAL, owner, name, descriptor, false));
     }
 
-    public final ExtendedInsnList invokestatic(String owner, String name, String descriptor) {
-        super.add(new MethodInsnNode(Opcodes.INVOKESTATIC, owner, name, descriptor, false));
-
-        return this;
+    public final ExtendedInsnList invokestatic(String owner, String name, String descriptor, boolean isInterface) {
+        return this.append(new MethodInsnNode(Opcodes.INVOKESTATIC, owner, name, descriptor, isInterface));
     }
 
     public final ExtendedInsnList invokeinterface(String owner, String name, String descriptor) {
-        super.add(new MethodInsnNode(Opcodes.INVOKEINTERFACE, owner, name, descriptor, true));
-
-        return this;
+        return this.append(new MethodInsnNode(Opcodes.INVOKEINTERFACE, owner, name, descriptor, true));
     }
 
     /**
      * @see InvokeDynamicInsnNode
      */
-    public final ExtendedInsnList invokedynamic(final String name, final String descriptor, final Handle bootstrapMethodHandle, final Object... bootstrapMethodArguments) {
-        super.add(new InvokeDynamicInsnNode(name, descriptor, bootstrapMethodHandle, bootstrapMethodArguments));
-
-        return this;
+    public final ExtendedInsnList invokedynamic(String name, String descriptor, Handle bootstrapMethodHandle, Object... bootstrapMethodArguments) {
+        return this.append(new InvokeDynamicInsnNode(name, descriptor, bootstrapMethodHandle, bootstrapMethodArguments));
     }
 
     /**
      * @see JumpInsnNode
      */
-    public final ExtendedInsnList jump(final int opcode, final Label label) {
-        super.add(new JumpInsnNode(opcode, getLabelNode(label)));
+    public final ExtendedInsnList jump(int opcode, String label) {
+        return this.append(new JumpInsnNode(opcode, getLabelNode(this.labels.computeIfAbsent(label, labelConstructor))));
+    }
 
-        return this;
+    public final ExtendedInsnList jump(int opcode, Label label) {
+        return this.append(new JumpInsnNode(opcode, getLabelNode(label)));
+    }
+
+    public final ExtendedInsnList jump(int opcode, LabelNode label) {
+        return this.append(new JumpInsnNode(opcode, label));
+    }
+
+    public final ExtendedInsnList ifeq(String label) {
+        return this.append(new JumpInsnNode(Opcodes.IFEQ, getLabelNode(this.labels.computeIfAbsent(label, labelConstructor))));
     }
 
     public final ExtendedInsnList ifeq(Label label) {
-        super.add(new JumpInsnNode(Opcodes.IFEQ, getLabelNode(label)));
-
-        return this;
+        return this.append(new JumpInsnNode(Opcodes.IFEQ, getLabelNode(label)));
     }
 
     public final ExtendedInsnList ifeq(LabelNode label) {
-        super.add(new JumpInsnNode(Opcodes.IFEQ, label));
+        return this.append(new JumpInsnNode(Opcodes.IFEQ, label));
+    }
 
-        return this;
+    public final ExtendedInsnList ifne(String label) {
+        return this.append(new JumpInsnNode(Opcodes.IFNE, getLabelNode(this.labels.computeIfAbsent(label, labelConstructor))));
     }
 
     public final ExtendedInsnList ifne(Label label) {
-        super.add(new JumpInsnNode(Opcodes.IFNE, getLabelNode(label)));
-
-        return this;
+        return this.append(new JumpInsnNode(Opcodes.IFNE, getLabelNode(label)));
     }
 
     public final ExtendedInsnList ifne(LabelNode label) {
-        super.add(new JumpInsnNode(Opcodes.IFEQ, label));
+        return this.append(new JumpInsnNode(Opcodes.IFEQ, label));
+    }
 
-        return this;
+    public final ExtendedInsnList iflt(String label) {
+        return this.append(new JumpInsnNode(Opcodes.IFLT, getLabelNode(this.labels.computeIfAbsent(label, labelConstructor))));
     }
 
     public final ExtendedInsnList iflt(Label label) {
-        super.add(new JumpInsnNode(Opcodes.IFLT, getLabelNode(label)));
-
-        return this;
+        return this.append(new JumpInsnNode(Opcodes.IFLT, getLabelNode(label)));
     }
 
     public final ExtendedInsnList iflt(LabelNode label) {
-        super.add(new JumpInsnNode(Opcodes.IFEQ, label));
+        return this.append(new JumpInsnNode(Opcodes.IFEQ, label));
+    }
 
-        return this;
+    public final ExtendedInsnList ifge(String label) {
+        return this.append(new JumpInsnNode(Opcodes.IFGE, getLabelNode(this.labels.computeIfAbsent(label, labelConstructor))));
     }
 
     public final ExtendedInsnList ifge(Label label) {
-        super.add(new JumpInsnNode(Opcodes.IFGE, getLabelNode(label)));
-
-        return this;
+        return this.append(new JumpInsnNode(Opcodes.IFGE, getLabelNode(label)));
     }
 
     public final ExtendedInsnList ifge(LabelNode label) {
-        super.add(new JumpInsnNode(Opcodes.IFEQ, label));
+        return this.append(new JumpInsnNode(Opcodes.IFEQ, label));
+    }
 
-        return this;
+    public final ExtendedInsnList ifgt(String label) {
+        return this.append(new JumpInsnNode(Opcodes.IFGT, getLabelNode(this.labels.computeIfAbsent(label, labelConstructor))));
     }
 
     public final ExtendedInsnList ifgt(Label label) {
-        super.add(new JumpInsnNode(Opcodes.IFGT, getLabelNode(label)));
-
-        return this;
+        return this.append(new JumpInsnNode(Opcodes.IFGT, getLabelNode(label)));
     }
 
     public final ExtendedInsnList ifgt(LabelNode label) {
-        super.add(new JumpInsnNode(Opcodes.IFEQ, label));
+        return this.append(new JumpInsnNode(Opcodes.IFEQ, label));
+    }
 
-        return this;
+    public final ExtendedInsnList ifle(String label) {
+        return this.append(new JumpInsnNode(Opcodes.IFLE, getLabelNode(this.labels.computeIfAbsent(label, labelConstructor))));
     }
 
     public final ExtendedInsnList ifle(Label label) {
-        super.add(new JumpInsnNode(Opcodes.IFLE, getLabelNode(label)));
-
-        return this;
+        return this.append(new JumpInsnNode(Opcodes.IFLE, getLabelNode(label)));
     }
 
     public final ExtendedInsnList ifle(LabelNode label) {
-        super.add(new JumpInsnNode(Opcodes.IFEQ, label));
+        return this.append(new JumpInsnNode(Opcodes.IFEQ, label));
+    }
 
-        return this;
+    public final ExtendedInsnList if_icmpeq(String label) {
+        return this.append(new JumpInsnNode(Opcodes.IF_ICMPEQ, getLabelNode(this.labels.computeIfAbsent(label, labelConstructor))));
     }
 
     public final ExtendedInsnList if_icmpeq(Label label) {
-        super.add(new JumpInsnNode(Opcodes.IF_ICMPEQ, getLabelNode(label)));
-
-        return this;
+        return this.append(new JumpInsnNode(Opcodes.IF_ICMPEQ, getLabelNode(label)));
     }
 
     public final ExtendedInsnList if_icmpeq(LabelNode label) {
-        super.add(new JumpInsnNode(Opcodes.IFEQ, label));
+        return this.append(new JumpInsnNode(Opcodes.IFEQ, label));
+    }
 
-        return this;
+    public final ExtendedInsnList if_icmpne(String label) {
+        return this.append(new JumpInsnNode(Opcodes.IF_ICMPNE, getLabelNode(this.labels.computeIfAbsent(label, labelConstructor))));
     }
 
     public final ExtendedInsnList if_icmpne(Label label) {
-        super.add(new JumpInsnNode(Opcodes.IF_ICMPNE, getLabelNode(label)));
-
-        return this;
+        return this.append(new JumpInsnNode(Opcodes.IF_ICMPNE, getLabelNode(label)));
     }
 
     public final ExtendedInsnList if_icmpne(LabelNode label) {
-        super.add(new JumpInsnNode(Opcodes.IFEQ, label));
+        return this.append(new JumpInsnNode(Opcodes.IFEQ, label));
+    }
 
-        return this;
+    public final ExtendedInsnList if_icmplt(String label) {
+        return this.append(new JumpInsnNode(Opcodes.IF_ICMPLT, getLabelNode(this.labels.computeIfAbsent(label, labelConstructor))));
     }
 
     public final ExtendedInsnList if_icmplt(Label label) {
-        super.add(new JumpInsnNode(Opcodes.IF_ICMPLT, getLabelNode(label)));
-
-        return this;
+        return this.append(new JumpInsnNode(Opcodes.IF_ICMPLT, getLabelNode(label)));
     }
 
     public final ExtendedInsnList if_icmplt(LabelNode label) {
-        super.add(new JumpInsnNode(Opcodes.IFEQ, label));
+        return this.append(new JumpInsnNode(Opcodes.IFEQ, label));
+    }
 
-        return this;
+    public final ExtendedInsnList if_icmpge(String label) {
+        return this.append(new JumpInsnNode(Opcodes.IF_ICMPGE, getLabelNode(this.labels.computeIfAbsent(label, labelConstructor))));
     }
 
     public final ExtendedInsnList if_icmpge(Label label) {
-        super.add(new JumpInsnNode(Opcodes.IF_ICMPGE, getLabelNode(label)));
-
-        return this;
+        return this.append(new JumpInsnNode(Opcodes.IF_ICMPGE, getLabelNode(label)));
     }
 
     public final ExtendedInsnList if_icmpge(LabelNode label) {
-        super.add(new JumpInsnNode(Opcodes.IFEQ, label));
+        return this.append(new JumpInsnNode(Opcodes.IFEQ, label));
+    }
 
-        return this;
+    public final ExtendedInsnList if_icmpgt(String label) {
+        return this.append(new JumpInsnNode(Opcodes.IF_ICMPGT, getLabelNode(this.labels.computeIfAbsent(label, labelConstructor))));
     }
 
     public final ExtendedInsnList if_icmpgt(Label label) {
-        super.add(new JumpInsnNode(Opcodes.IF_ICMPGT, getLabelNode(label)));
-
-        return this;
+        return this.append(new JumpInsnNode(Opcodes.IF_ICMPGT, getLabelNode(label)));
     }
 
     public final ExtendedInsnList if_icmpgt(LabelNode label) {
-        super.add(new JumpInsnNode(Opcodes.IFEQ, label));
+        return this.append(new JumpInsnNode(Opcodes.IFEQ, label));
+    }
 
-        return this;
+    public final ExtendedInsnList if_icmple(String label) {
+        return this.append(new JumpInsnNode(Opcodes.IF_ICMPLE, getLabelNode(this.labels.computeIfAbsent(label, labelConstructor))));
     }
 
     public final ExtendedInsnList if_icmple(Label label) {
-        super.add(new JumpInsnNode(Opcodes.IF_ICMPLE, getLabelNode(label)));
-
-        return this;
+        return this.append(new JumpInsnNode(Opcodes.IF_ICMPLE, getLabelNode(label)));
     }
 
     public final ExtendedInsnList if_icmple(LabelNode label) {
-        super.add(new JumpInsnNode(Opcodes.IFEQ, label));
+        return this.append(new JumpInsnNode(Opcodes.IFEQ, label));
+    }
 
-        return this;
+    public final ExtendedInsnList if_acmpeq(String label) {
+        return this.append(new JumpInsnNode(Opcodes.IF_ACMPEQ, getLabelNode(this.labels.computeIfAbsent(label, labelConstructor))));
     }
 
     public final ExtendedInsnList if_acmpeq(Label label) {
-        super.add(new JumpInsnNode(Opcodes.IF_ACMPEQ, getLabelNode(label)));
-
-        return this;
+        return this.append(new JumpInsnNode(Opcodes.IF_ACMPEQ, getLabelNode(label)));
     }
 
     public final ExtendedInsnList if_acmpeq(LabelNode label) {
-        super.add(new JumpInsnNode(Opcodes.IFEQ, label));
+        return this.append(new JumpInsnNode(Opcodes.IFEQ, label));
+    }
 
-        return this;
+    public final ExtendedInsnList if_acmpne(String label) {
+        return this.append(new JumpInsnNode(Opcodes.IF_ACMPNE, getLabelNode(this.labels.computeIfAbsent(label, labelConstructor))));
     }
 
     public final ExtendedInsnList if_acmpne(Label label) {
-        super.add(new JumpInsnNode(Opcodes.IF_ACMPNE, getLabelNode(label)));
-
-        return this;
+        return this.append(new JumpInsnNode(Opcodes.IF_ACMPNE, getLabelNode(label)));
     }
 
     public final ExtendedInsnList if_acmpne(LabelNode label) {
-        super.add(new JumpInsnNode(Opcodes.IFEQ, label));
+        return this.append(new JumpInsnNode(Opcodes.IFEQ, label));
+    }
 
-        return this;
+    public final ExtendedInsnList go_to(String label) {
+        return this.append(new JumpInsnNode(Opcodes.GOTO, getLabelNode(this.labels.computeIfAbsent(label, labelConstructor))));
     }
 
     public final ExtendedInsnList go_to(Label label) {
-        super.add(new JumpInsnNode(Opcodes.GOTO, getLabelNode(label)));
-
-        return this;
+        return this.append(new JumpInsnNode(Opcodes.GOTO, getLabelNode(label)));
     }
 
     public final ExtendedInsnList go_to(LabelNode label) {
-        super.add(new JumpInsnNode(Opcodes.IFEQ, label));
+        return this.append(new JumpInsnNode(Opcodes.IFEQ, label));
+    }
 
-        return this;
+    public final ExtendedInsnList jsr(String label) {
+        return this.append(new JumpInsnNode(Opcodes.JSR, getLabelNode(this.labels.computeIfAbsent(label, labelConstructor))));
     }
 
     public final ExtendedInsnList jsr(Label label) {
-        super.add(new JumpInsnNode(Opcodes.JSR, getLabelNode(label)));
-
-        return this;
+        return this.append(new JumpInsnNode(Opcodes.JSR, getLabelNode(label)));
     }
 
     public final ExtendedInsnList jsr(LabelNode label) {
-        super.add(new JumpInsnNode(Opcodes.IFEQ, label));
+        return this.append(new JumpInsnNode(Opcodes.IFEQ, label));
+    }
 
-        return this;
+    public final ExtendedInsnList ifnull(String label) {
+        return this.append(new JumpInsnNode(Opcodes.IFNULL, getLabelNode(this.labels.computeIfAbsent(label, labelConstructor))));
     }
 
     public final ExtendedInsnList ifnull (Label label) {
-        super.add(new JumpInsnNode(Opcodes.IFNULL, getLabelNode(label)));
-
-        return this;
+        return this.append(new JumpInsnNode(Opcodes.IFNULL, getLabelNode(label)));
     }
 
     public final ExtendedInsnList ifnull(LabelNode label) {
-        super.add(new JumpInsnNode(Opcodes.IFEQ, label));
+        return this.append(new JumpInsnNode(Opcodes.IFEQ, label));
+    }
 
-        return this;
+    public final ExtendedInsnList ifnonnull(String label) {
+        return this.append(new JumpInsnNode(Opcodes.IFNONNULL, getLabelNode(this.labels.computeIfAbsent(label, labelConstructor))));
     }
 
     public final ExtendedInsnList ifnonnull(Label label) {
-        super.add(new JumpInsnNode(Opcodes.IFNONNULL, getLabelNode(label)));
-
-        return this;
+        return this.append(new JumpInsnNode(Opcodes.IFNONNULL, getLabelNode(label)));
     }
 
     public final ExtendedInsnList ifnonnull(LabelNode label) {
-        super.add(new JumpInsnNode(Opcodes.IFEQ, label));
-
-        return this;
+        return this.append(new JumpInsnNode(Opcodes.IFEQ, label));
     }
 
-    public final ExtendedInsnList label() {
-        super.add(new LabelNode());
-
-        return this;
+    public final ExtendedInsnList label(String label) {
+        return this.append(getLabelNode(this.labels.computeIfAbsent(label, labelConstructor)));
     }
 
-    public final ExtendedInsnList label(final Label label) {
-        super.add(getLabelNode(label));
-
-        return this;
+    public final ExtendedInsnList label(Label label) {
+        return this.append(getLabelNode(label));
     }
 
-    public final ExtendedInsnList ldc(final Object value) {
-        super.add(new LdcInsnNode(value));
-
-        return this;
+    public final ExtendedInsnList ldc(Object value) {
+        return this.append(new LdcInsnNode(value));
     }
 
-    public final ExtendedInsnList iinc(final int var, final int increment) {
-        super.add(new IincInsnNode(var, increment));
-
-        return this;
+    public final ExtendedInsnList iinc(int var, int increment) {
+        return this.append(new IincInsnNode(var, increment));
     }
 
-    public final ExtendedInsnList tableswitch(final int min, final int max, final Label dflt, final Label... labels) {
-        super.add(new TableSwitchInsnNode(min, max, getLabelNode(dflt), getLabelNodes(labels)));
-
-        return this;
+    public final ExtendedInsnList tableswitch(int min, int max, Label dflt, Label... labels) {
+        return this.append(new TableSwitchInsnNode(min, max, getLabelNode(dflt), getLabelNodes(labels)));
     }
 
-    public final ExtendedInsnList lookupswitch(final Label dflt, final int[] keys, final Label[] labels) {
-        super.add(new LookupSwitchInsnNode(getLabelNode(dflt), keys, getLabelNodes(labels)));
-
-        return this;
+    public final ExtendedInsnList lookupswitch(Label dflt, int[] keys, Label[] labels) {
+        return this.append(new LookupSwitchInsnNode(getLabelNode(dflt), keys, getLabelNodes(labels)));
     }
 
-    public final ExtendedInsnList multianewarray(final String descriptor, final int numDimensions) {
-        super.add(new MultiANewArrayInsnNode(descriptor, numDimensions));
-
-        return this;
+    public final ExtendedInsnList multianewarray(String descriptor, int numDimensions) {
+        return this.append(new MultiANewArrayInsnNode(descriptor, numDimensions));
     }
 }

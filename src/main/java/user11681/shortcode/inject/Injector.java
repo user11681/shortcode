@@ -6,11 +6,11 @@ import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.MethodNode;
 
 public interface Injector {
-    static void inject(final MethodNode target, final InsnList injection, final InjectionContext context) {
+    static void inject(MethodNode target, InsnList injection, InjectionContext context) {
         inject(target.instructions, injection,context);
     }
 
-    static void inject(final InsnList target, final InsnList injection, final InjectionContext context) {
+    static void inject(InsnList target, InsnList injection, InjectionContext context) {
         final ReferenceArrayList<AbstractInsnNode> matches = context.findMatches(target);
         final int size = matches.size();
 

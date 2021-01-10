@@ -18,7 +18,7 @@ public class DebugOptions {
         this(DEFAULT_UPPERCASE, DEFAULT_INDEXES, DEFAULT_INDENTATION, DEFAULT_LOGGER);
     }
 
-    protected DebugOptions(final boolean uppercase, final boolean indexes, final String indentation, final Logger logger) {
+    protected DebugOptions(boolean uppercase, boolean indexes, String indentation, Logger logger) {
         this.uppercase = uppercase;
         this.indexes = indexes;
         this.indentation = indentation;
@@ -37,7 +37,7 @@ public class DebugOptions {
         return new DebugOptions(this.uppercase, true, this.indentation, this.logger);
     }
 
-    public DebugOptions indentation(final int indentation) {
+    public DebugOptions indentation(int indentation) {
         final StringBuilder indentationBuilder = new StringBuilder();
 
         for (int i = 0; i < indentation; i++) {
@@ -47,7 +47,7 @@ public class DebugOptions {
         return new DebugOptions(this.uppercase, this.indexes, indentationBuilder.toString(), this.logger);
     }
 
-    public DebugOptions logger(final Logger logger) {
+    public DebugOptions logger(Logger logger) {
         return new DebugOptions(this.uppercase, this.indexes, this.indentation, logger);
     }
 }
