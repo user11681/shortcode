@@ -5,7 +5,7 @@ import org.objectweb.asm.tree.InsnList;
 
 public class InjectionAfter extends InjectionOffset {
     @Override
-    public void inject(final InsnList target, final InsnList injection, final AbstractInsnNode injectionPoint) {
+    public void inject(InsnList target, InsnList injection, AbstractInsnNode injectionPoint) {
         target.insert(injectionPoint, injection);
     }
 }

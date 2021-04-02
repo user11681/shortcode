@@ -6,12 +6,12 @@ import org.objectweb.asm.tree.InsnList;
 public class InjectionByPositive extends InjectionOffset {
     public final int offset;
 
-    public InjectionByPositive(final int offset) {
+    public InjectionByPositive(int offset) {
         this.offset = offset;
     }
 
     @Override
-    public void inject(final InsnList target, final InsnList injection, AbstractInsnNode injectionPoint) {
+    public void inject(InsnList target, InsnList injection, AbstractInsnNode injectionPoint) {
         final int offset = this.offset;
 
         for (int i = 0; i < offset; i++) {

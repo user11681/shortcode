@@ -9,7 +9,7 @@ public abstract class InjectionContext {
 //    public static final InjectionPoint END =
     public final InjectionOffset offset;
 
-    public InjectionContext(final InjectionOffset offset) {
+    public InjectionContext(InjectionOffset offset) {
         this.offset = offset;
     }
 
@@ -29,5 +29,5 @@ public abstract class InjectionContext {
         return matches;
     }
 
-    public abstract boolean isMatch(final AbstractInsnNode instruction);
+    public abstract boolean isMatch(AbstractInsnNode instruction);
 }

@@ -21,15 +21,15 @@ public class InstructionWalker implements Opcodes {
 
     public AbstractInsnNode instruction;
 
-    public InstructionWalker(final MethodNode method) {
+    public InstructionWalker(MethodNode method) {
         this.instruction = method.instructions.getFirst();
     }
 
-    public InstructionWalker(final InsnList instructions) {
+    public InstructionWalker(InsnList instructions) {
         this.instruction = instructions.getFirst();
     }
 
-    public InstructionWalker(final AbstractInsnNode firstInstruction) {
+    public InstructionWalker(AbstractInsnNode firstInstruction) {
         this.instruction = firstInstruction;
     }
 
@@ -632,11 +632,19 @@ public class InstructionWalker implements Opcodes {
     }
 
     private void dup(int x) {
+<<<<<<< HEAD
         this.operands.add(this.operands.size() - 1 - x, this.operands.peek());
     }
 
     private void dup2(int x) {
         int end = this.operands.size() - 1;
+=======
+        this.operands.add(this.operands.size() - 1 - x, this.operands.top());
+    }
+
+    private void dup2(int x) {
+        final int end = this.operands.size() - 1;
+>>>>>>> 194643b10fc2a6877e9582ba2c304beddde121b7
 
         this.operands.add(end - 1 - x, this.operands.get(end - 1));
         this.operands.add(end - x, this.operands.get(end));
@@ -649,7 +657,11 @@ public class InstructionWalker implements Opcodes {
     }
 
     private void push(String descriptor) {
+<<<<<<< HEAD
         this.operands.add(descriptor);
+=======
+        this.operands.push(descriptor);
+>>>>>>> 194643b10fc2a6877e9582ba2c304beddde121b7
 
         if ("J".equals(descriptor) || "D".equals(descriptor)) {
             this.operands.add(descriptor);

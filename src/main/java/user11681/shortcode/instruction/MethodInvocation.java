@@ -7,7 +7,7 @@ public class MethodInvocation {
     public final String name;
     public final String descriptor;
 
-    public MethodInvocation(final MethodInsnNode instruction) {
+    public MethodInvocation(MethodInsnNode instruction) {
         this.owner = instruction.owner;
         this.name = instruction.name;
         this.descriptor = instruction.desc;

@@ -54,9 +54,8 @@ public interface Debug extends Opcodes {
     }
 
     static void logInstructions(Iterator<AbstractInsnNode> instructions, DebugOptions options) {
-        List<String> lines = toString(instructions, options);
 
-        lines.forEach(options.printer::print);
+        toString(instructions, options).forEach(options.printer::print);
     }
 
     static List<String> toString(MethodNode method) {
