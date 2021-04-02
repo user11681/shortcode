@@ -7,44 +7,43 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.ClassNode;
 
 public class Klass extends ClassNode {
-    public ClassReader reader;
-    public ClassWriter writer;
+    public Klass read(byte[] bytecode, int parsingOptions) {
+        new ClassReader(bytecode).accept(this, parsingOptions);
 
-    public Klass() {
-        super();
+        return this;
     }
 
-    public void read(final byte[] classFile, final int parsingOptions) {
-        this.reader = new ClassReader(classFile);
-        this.reader.accept(this, parsingOptions);
-    }
-
-    public void read(final InputStream inputStream, final int parsingOptions) {
+    public Klass read(InputStream inputStream, int parsingOptions) {
         try {
-            this.reader = new ClassReader(inputStream);
-            this.reader.accept(this, parsingOptions);
-        } catch (final IOException throwable) {
+            new ClassReader(inputStream).accept(this, parsingOptions);
+        } catch (IOException throwable) {
             throw new RuntimeException(throwable);
         }
+
+        return this;
     }
 
-    public void read(final String className, final int parsingOptions) {
+    public Klass read(String className, int parsingOptions) {
         try {
-            this.reader = new ClassReader(className);
-            this.reader.accept(this, parsingOptions);
-        } catch (final IOException throwable) {
+            new ClassReader(className).accept(this, parsingOptions);
+        } catch (IOException throwable) {
             throw new RuntimeException(throwable);
         }
+
+        return this;
     }
 
-    public byte[] toByteArray() {
-        return this.toByteArray(ClassWriter.COMPUTE_FRAMES);
+    public byte[] bytecode() {
+        return this.bytecode(ClassWriter.COMPUTE_FRAMES);
     }
 
-    public byte[] toByteArray(final int flags) {
-        this.writer = new ClassWriter(flags);
-        this.accept(this.writer);
+    public byte[] bytecode(int flags) {
+        return this.bytecode(new ClassWriter(flags));
+    }
 
-        return this.writer.toByteArray();
+    public byte[] bytecode(ClassWriter writer) {
+        this.accept(writer);
+
+        return writer.toByteArray();
     }
 }

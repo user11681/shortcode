@@ -1,14 +1,13 @@
 package user11681.shortcode.debug;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;
-import org.apache.logging.log4j.Logger;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.FieldInsnNode;
@@ -34,64 +33,56 @@ import user11681.shortcode.Shortcode;
 public interface Debug extends Opcodes {
     DebugOptions DEFAULT_OPTIONS = DebugOptions.defaultOptions();
 
-    static void logInstructions(final MethodNode method) {
+    static void logInstructions(MethodNode method) {
         logInstructions(method.instructions.iterator(), DEFAULT_OPTIONS);
     }
 
-    static void logInstructions(final MethodNode method, final DebugOptions options) {
+    static void logInstructions(MethodNode method, DebugOptions options) {
         logInstructions(method.instructions.iterator(), options);
     }
 
-    static void logInstructions(final InsnList instructions) {
+    static void logInstructions(InsnList instructions) {
         logInstructions(instructions.iterator(), DEFAULT_OPTIONS);
     }
 
-    static void logInstructions(final InsnList instructions, final DebugOptions options) {
+    static void logInstructions(InsnList instructions, DebugOptions options) {
         logInstructions(instructions.iterator(), options);
     }
 
-    static void logInstructions(final Iterator<AbstractInsnNode> instructions) {
+    static void logInstructions(Iterator<AbstractInsnNode> instructions) {
         logInstructions(instructions, DEFAULT_OPTIONS);
     }
 
-    static void logInstructions(final Iterator<AbstractInsnNode> instructions, DebugOptions options) {
-        final ObjectArrayList<String> lines = toString(instructions, options);
-        final String[] lineArray = lines.elements();
-        final int lineCount = lines.size();
-        final Logger logger = options.logger;
+    static void logInstructions(Iterator<AbstractInsnNode> instructions, DebugOptions options) {
+        List<String> lines = toString(instructions, options);
 
-        for (int i = 0; i < lineCount; i++) {
-//            logger.info(lineArray[i]);
-            System.out.println(lineArray[i]);
-        }
+        lines.forEach(options.printer::print);
     }
 
-    static ObjectArrayList<String> toString(final MethodNode method) {
+    static List<String> toString(MethodNode method) {
         return toString(method.instructions.iterator(), DEFAULT_OPTIONS);
     }
 
-    static ObjectArrayList<String> toString(final MethodNode method, final DebugOptions options) {
+    static List<String> toString(MethodNode method, DebugOptions options) {
         return toString(method.instructions.iterator(), options);
     }
 
-    static ObjectArrayList<String> toString(final InsnList instructions) {
+    static List<String> toString(InsnList instructions) {
         return toString(instructions.iterator(), DEFAULT_OPTIONS);
     }
 
-    static ObjectArrayList<String> toString(final InsnList instructions, final DebugOptions options) {
+    static List<String> toString(InsnList instructions, DebugOptions options) {
         return toString(instructions.iterator(), options);
     }
 
-    static ObjectArrayList<String> toString(final Iterator<AbstractInsnNode> instructions) {
+    static List<String> toString(Iterator<AbstractInsnNode> instructions) {
         return toString(instructions, DEFAULT_OPTIONS);
     }
 
-    static ObjectArrayList<String> toString(Iterator<AbstractInsnNode> instructions, final DebugOptions options) {
-        final ObjectArrayList<String> lines = ObjectArrayList.wrap(new String[20], 0);
-        final Reference2IntOpenHashMap<AbstractInsnNode> labelToIndex = new Reference2IntOpenHashMap<>();
+    static List<String> toString(Iterator<AbstractInsnNode> instructions, DebugOptions options) {
+        List<String> lines = new ArrayList<>();
+        Map<AbstractInsnNode, Integer> labelToIndex = new IdentityHashMap<>();
         String[] lineArray;
-        int labelIndex = 0;
-        int size = 0;
         int index = 0;
 
         while (instructions.hasNext()) {
@@ -101,31 +92,30 @@ public interface Debug extends Opcodes {
                 lineArray[0] = index++ + ":" + options.indentation + lineArray[0];
             }
 
-            lines.addElements(size, lineArray);
-            size += lineArray.length;
+            Collections.addAll(lines, lineArray);
         }
 
         return lines;
     }
 
-    static String nodeToString(final AbstractInsnNode instruction, final Map<AbstractInsnNode, Integer> labelToIndex) {
+    static String nodeToString(AbstractInsnNode instruction, Map<AbstractInsnNode, Integer> labelToIndex) {
         return nodeToString(instruction, labelToIndex, DEFAULT_OPTIONS);
     }
 
-    static String nodeToString(final AbstractInsnNode instruction, final Map<AbstractInsnNode, Integer> labelToIndex, final DebugOptions options) {
-        final Function<? super AbstractInsnNode, ? extends Integer> labelToIndexMapper = (final AbstractInsnNode irrelevant) -> labelToIndex.size();
-        final int opcode = instruction.getOpcode();
-        final String string = opcode >= 0
+    static String nodeToString(AbstractInsnNode instruction, Map<AbstractInsnNode, Integer> labelToIndex, DebugOptions options) {
+        Function<? super AbstractInsnNode, ? extends Integer> labelToIndexMapper = (AbstractInsnNode irrelevant) -> labelToIndex.size();
+        int opcode = instruction.getOpcode();
+        String string = opcode >= 0
             ? options.uppercase
-            ? Shortcode.TO_STRING[opcode].toUpperCase()
-            : Shortcode.TO_STRING[opcode]
+            ? Shortcode.toString[opcode].toUpperCase()
+            : Shortcode.toString[opcode]
             : null;
 
         switch (instruction.getType()) {
             case AbstractInsnNode.INSN:
                 return options.indentation + string;
             case AbstractInsnNode.INT_INSN:
-                final IntInsnNode intInstruction = (IntInsnNode) instruction;
+                IntInsnNode intInstruction = (IntInsnNode) instruction;
 
                 if (intInstruction.getOpcode() == NEWARRAY) {
                     switch (intInstruction.operand) {
@@ -147,15 +137,15 @@ public interface Debug extends Opcodes {
             case AbstractInsnNode.TYPE_INSN:
                 return options.indentation + string + " " + ((TypeInsnNode) instruction).desc;
             case AbstractInsnNode.FIELD_INSN:
-                final FieldInsnNode fieldInstruction = (FieldInsnNode) instruction;
+                FieldInsnNode fieldInstruction = (FieldInsnNode) instruction;
 
                 return options.indentation + "getstatic " + fieldInstruction.owner + "." + fieldInstruction.name + " : " + fieldInstruction.desc;
             case AbstractInsnNode.METHOD_INSN:
-                final MethodInsnNode methodInstruction = (MethodInsnNode) instruction;
+                MethodInsnNode methodInstruction = (MethodInsnNode) instruction;
 
                 return options.indentation + string + " " + methodInstruction.owner + "." + methodInstruction.name + methodInstruction.desc;
             case AbstractInsnNode.INVOKE_DYNAMIC_INSN:
-                final InvokeDynamicInsnNode invokeDynamicInstruction = (InvokeDynamicInsnNode) instruction;
+                InvokeDynamicInsnNode invokeDynamicInstruction = (InvokeDynamicInsnNode) instruction;
 
                 return
                     options.indentation + "invokedynamic " + invokeDynamicInstruction.name + invokeDynamicInstruction.desc + " [" +
@@ -167,23 +157,23 @@ public interface Debug extends Opcodes {
             case AbstractInsnNode.LABEL:
                 return "L" + labelToIndex.computeIfAbsent(instruction, labelToIndexMapper);
             case AbstractInsnNode.LDC_INSN:
-                final Object constant = ((LdcInsnNode) instruction).cst;
+                Object constant = ((LdcInsnNode) instruction).cst;
 
                 return constant instanceof String
                     ? (options.indentation + string + " " + "\"" + constant + "\"")
                     : (options.indentation + string + " " + constant);
             case AbstractInsnNode.IINC_INSN:
-                final IincInsnNode iIncInstruction = (IincInsnNode) instruction;
+                IincInsnNode iIncInstruction = (IincInsnNode) instruction;
 
                 return options.indentation + string + " " + iIncInstruction.var + " " + iIncInstruction.incr;
             case AbstractInsnNode.TABLESWITCH_INSN: {
-                final TableSwitchInsnNode tableSwitchInstruction = (TableSwitchInsnNode) instruction;
-                final StringBuilder switchBuilder = new StringBuilder();
+                TableSwitchInsnNode tableSwitchInstruction = (TableSwitchInsnNode) instruction;
+                StringBuilder switchBuilder = new StringBuilder();
 
                 switchBuilder.append(options.indentation).append(string);
 
-                final List<LabelNode> labels = tableSwitchInstruction.labels;
-                final int max = tableSwitchInstruction.max;
+                List<LabelNode> labels = tableSwitchInstruction.labels;
+                int max = tableSwitchInstruction.max;
 
                 for (int index = tableSwitchInstruction.min; index < max; index++) {
                     switchBuilder.append(options.indentation).append(index).append(": L").append(labelToIndex.computeIfAbsent(labels.get(index), labelToIndexMapper));
@@ -194,14 +184,14 @@ public interface Debug extends Opcodes {
                 return switchBuilder.toString();
             }
             case AbstractInsnNode.LOOKUPSWITCH_INSN: {
-                final LookupSwitchInsnNode lookupSwitchInstruction = (LookupSwitchInsnNode) instruction;
-                final StringBuilder switchBuilder = new StringBuilder();
+                LookupSwitchInsnNode lookupSwitchInstruction = (LookupSwitchInsnNode) instruction;
+                StringBuilder switchBuilder = new StringBuilder();
 
                 switchBuilder.append(options.indentation).append(string);
 
-                final List<LabelNode> labels = lookupSwitchInstruction.labels;
-                final List<Integer> keys = lookupSwitchInstruction.keys;
-                final int keyCount = keys.size();
+                List<LabelNode> labels = lookupSwitchInstruction.labels;
+                List<Integer> keys = lookupSwitchInstruction.keys;
+                int keyCount = keys.size();
 
                 for (int index = 0; index < keyCount; index++) {
                     switchBuilder.append(options.indentation).append(keys.get(index)).append(": L").append(labelToIndex.computeIfAbsent(labels.get(index), labelToIndexMapper));
@@ -212,12 +202,12 @@ public interface Debug extends Opcodes {
                 return switchBuilder.toString();
             }
             case AbstractInsnNode.MULTIANEWARRAY_INSN:
-                final MultiANewArrayInsnNode multiANewArrayInstruction = (MultiANewArrayInsnNode) instruction;
+                MultiANewArrayInsnNode multiANewArrayInstruction = (MultiANewArrayInsnNode) instruction;
 
                 return options.indentation + string + multiANewArrayInstruction.desc + multiANewArrayInstruction.dims;
             case AbstractInsnNode.FRAME:
-                final FrameNode frame = (FrameNode) instruction;
-                final String type = options.uppercase ? Shortcode.frameToString.get(frame.type).toUpperCase() : Shortcode.frameToString.get(frame.type);
+                FrameNode frame = (FrameNode) instruction;
+                String type = options.uppercase ? Shortcode.frameToString.get(frame.type).toUpperCase() : Shortcode.frameToString.get(frame.type);
 
                 switch (frame.type) {
                     case F_NEW:
@@ -241,9 +231,9 @@ public interface Debug extends Opcodes {
         return "UNKNOWN";
     }
 
-    static String stackToString(final List<Object> stack) {
-        final StringBuilder builder = new StringBuilder("[");
-        final int elementCount = stack.size();
+    static String stackToString(List<Object> stack) {
+        StringBuilder builder = new StringBuilder("[");
+        int elementCount = stack.size();
 
         for (int i = 0; i < elementCount; i++) {
             builder.append(frameElementToString(stack.get(i)));
@@ -258,7 +248,7 @@ public interface Debug extends Opcodes {
         return builder.toString();
     }
 
-    static String frameElementToString(final Object element) {
+    static String frameElementToString(Object element) {
         if (element instanceof Integer) {
             if (element == TOP) {
                 return "top";

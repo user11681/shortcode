@@ -1,6 +1,6 @@
 package user11681.shortcode.inject;
 
-import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
+import java.util.List;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.MethodNode;
@@ -11,11 +11,10 @@ public interface Injector {
     }
 
     static void inject(final InsnList target, final InsnList injection, final InjectionContext context) {
-        final ReferenceArrayList<AbstractInsnNode> matches = context.findMatches(target);
-        final int size = matches.size();
+        final List<AbstractInsnNode> matches = context.findMatches(target);
 
-        for (int i = 0; i < size; i++) {
-            context.offset.inject(target, injection, matches.get(i));
+        for (AbstractInsnNode match : matches) {
+            context.offset.inject(target, injection, match);
         }
     }
 }

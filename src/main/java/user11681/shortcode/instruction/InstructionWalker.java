@@ -1,6 +1,5 @@
 package user11681.shortcode.instruction;
 
-import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
@@ -14,10 +13,11 @@ import org.objectweb.asm.tree.MultiANewArrayInsnNode;
 import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 import user11681.shortcode.Shortcode;
+import user11681.shortcode.util.Stack;
 
 public class InstructionWalker implements Opcodes {
-    public final ReferenceArrayList<String> operands = new ReferenceArrayList<>();
-    public final ReferenceArrayList<String> variables = new ReferenceArrayList<>();
+    public final Stack<String> operands = new Stack<>();
+    public final Stack<String> variables = new Stack<>();
 
     public AbstractInsnNode instruction;
 
@@ -38,7 +38,7 @@ public class InstructionWalker implements Opcodes {
 
         switch (instruction.getOpcode()) {
             case ACONST_NULL:
-                this.operands.push("null");
+                this.operands.add("null");
                 break;
             case ICONST_M1:
             case ICONST_0:
@@ -50,25 +50,25 @@ public class InstructionWalker implements Opcodes {
             case ILOAD:
             case BIPUSH:
             case SIPUSH:
-                this.operands.push("I");
+                this.operands.add("I");
                 break;
             case LCONST_0:
             case LCONST_1:
             case LLOAD:
-                this.operands.push("J");
-                this.operands.push("J");
+                this.operands.add("J");
+                this.operands.add("J");
                 break;
             case FCONST_0:
             case FCONST_1:
             case FCONST_2:
             case FLOAD:
-                this.operands.push("F");
+                this.operands.add("F");
                 break;
             case DCONST_0:
             case DCONST_1:
             case DLOAD:
-                this.operands.push("D");
-                this.operands.push("D");
+                this.operands.add("D");
+                this.operands.add("D");
                 break;
             case IALOAD:
             case BALOAD:
@@ -76,35 +76,35 @@ public class InstructionWalker implements Opcodes {
             case SALOAD:
                 this.operands.pop();
                 this.operands.pop();
-                this.operands.push("I");
+                this.operands.add("I");
                 break;
             case LDC:
                 this.push(Type.getDescriptor(((LdcInsnNode) instruction).cst.getClass()));
                 break;
             case ALOAD:
-                this.operands.push(this.variables.get(((VarInsnNode) instruction).var));
+                this.operands.add(this.variables.get(((VarInsnNode) instruction).var));
                 break;
             case LALOAD:
                 this.operands.pop();
                 this.operands.pop();
-                this.operands.push("J");
-                this.operands.push("J");
+                this.operands.add("J");
+                this.operands.add("J");
                 break;
             case FALOAD:
                 this.operands.pop();
                 this.operands.pop();
-                this.operands.push("F");
+                this.operands.add("F");
                 break;
             case DALOAD:
                 this.operands.pop();
                 this.operands.pop();
-                this.operands.push("D");
-                this.operands.push("D");
+                this.operands.add("D");
+                this.operands.add("D");
                 break;
             case AALOAD:
                 this.operands.pop();
                 this.operands.pop();
-                this.operands.push("Ljava/lang/Object;");
+                this.operands.add("Ljava/lang/Object;");
                 break;
             case ISTORE:
             case FSTORE:
@@ -224,14 +224,14 @@ public class InstructionWalker implements Opcodes {
                 break;
             case I2L:
                 this.operands.set(this.operands.size() - 1, "J");
-                this.operands.push("J");
+                this.operands.add("J");
                 break;
             case I2F:
                 this.operands.set(this.operands.size() - 1, "F");
                 break;
             case I2D:
                 this.operands.set(this.operands.size() - 1, "D");
-                this.operands.push("D");
+                this.operands.add("D");
                 break;
             case L2I:
             case D2I:
@@ -309,7 +309,7 @@ public class InstructionWalker implements Opcodes {
                 break;
             case ATHROW:
                 this.operands.clear();
-                this.operands.add(this.variables.top());
+                this.operands.add(this.variables.peek());
                 break;
             case MULTIANEWARRAY:
                 this.walk((MultiANewArrayInsnNode) instruction);
@@ -599,16 +599,16 @@ public class InstructionWalker implements Opcodes {
         return this.instruction =  this.instruction.getPrevious();
     }*/
 
-    private void walk(final MultiANewArrayInsnNode instruction) {
+    private void walk(MultiANewArrayInsnNode instruction) {
         for (int i = 0; i < instruction.dims + 1; i++) {
             this.operands.pop();
         }
 
-        this.operands.push(instruction.desc);
+        this.operands.add(instruction.desc);
     }
 
-    private void walk(final MethodInsnNode instruction) {
-        for (final String parameter : Shortcode.getExplicitParameters(instruction)) {
+    private void walk(MethodInsnNode instruction) {
+        for (String parameter : Shortcode.getExplicitParameters(instruction)) {
             this.pop(parameter);
         }
 
@@ -616,51 +616,51 @@ public class InstructionWalker implements Opcodes {
             this.operands.pop();
         }
 
-        final String returnType = Shortcode.getReturnType(instruction);
+        String returnType = Shortcode.getReturnType(instruction);
 
         if (!"V".equals(returnType)) {
             this.push(returnType);
         }
     }
 
-    private void walk(final InvokeDynamicInsnNode instruction) {
-        for (final String parameter : Shortcode.getExplicitParameters(instruction)) {
+    private void walk(InvokeDynamicInsnNode instruction) {
+        for (String parameter : Shortcode.getExplicitParameters(instruction)) {
             this.pop(parameter);
         }
 
         this.push(Shortcode.getReturnType(instruction));
     }
 
-    private void dup(final int x) {
-        this.operands.add(this.operands.size() - 1 - x, this.operands.top());
+    private void dup(int x) {
+        this.operands.add(this.operands.size() - 1 - x, this.operands.peek());
     }
 
-    private void dup2(final int x) {
-        final int end = this.operands.size() - 1;
+    private void dup2(int x) {
+        int end = this.operands.size() - 1;
 
         this.operands.add(end - 1 - x, this.operands.get(end - 1));
         this.operands.add(end - x, this.operands.get(end));
     }
 
     private void swap() {
-        final int end = this.operands.size() - 1;
+        int end = this.operands.size() - 1;
 
-        this.operands.set(end, this.operands.set(end - 1, this.operands.top()));
+        this.operands.set(end, this.operands.set(end - 1, this.operands.peek()));
     }
 
-    private void push(final String descriptor) {
-        this.operands.push(descriptor);
+    private void push(String descriptor) {
+        this.operands.add(descriptor);
 
         if ("J".equals(descriptor) || "D".equals(descriptor)) {
-            this.operands.push(descriptor);
+            this.operands.add(descriptor);
         }
     }
 
     private void pop() {
-        this.pop(this.operands.top());
+        this.pop(this.operands.peek());
     }
 
-    private void pop(final String descriptor) {
+    private void pop(String descriptor) {
         this.operands.pop();
 
         if ("J".equals(descriptor) || "D".equals(descriptor)) {

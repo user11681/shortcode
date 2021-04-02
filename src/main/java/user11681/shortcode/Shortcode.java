@@ -1,23 +1,23 @@
 package user11681.shortcode;
 
-import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
-import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
-import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Array;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
@@ -48,13 +48,14 @@ import org.objectweb.asm.tree.TypeAnnotationNode;
 import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 import user11681.shortcode.instruction.MethodInvocation;
+import user11681.shortcode.util.FrameStringMap;
 
 @SuppressWarnings({"unused", "RedundantSuppression", "unchecked"})
 public abstract class Shortcode implements Opcodes {
     public static final Object notFound = null;
     public static final int ABSTRACT_ALL = ACC_NATIVE | ACC_ABSTRACT;
     public static final int NA = 0;
-    public static final int[] DELTA_STACK_SIZE = {
+    public static final int[] deltaStack = {
         0,
         1,
         1,
@@ -258,15 +259,7 @@ public abstract class Shortcode implements Opcodes {
         NA,
         NA
     };
-    public static final int ANNOTATION_VISITOR = 0;
-    public static final int ANNOTATION_NODE = 1;
-    public static final int TYPE_ANNOTATION_NODE = 2;
-    public static final int LOCAL_VARIABLE_ANNOTATION_NODE = 3;
-    public static final ClassToIntMap CLASS_TO_INT = new ClassToIntMap(
-        new Class[]{AnnotationVisitor.class, AnnotationNode.class, TypeAnnotationNode.class, LocalVariableAnnotationNode.class},
-        new int[]{ANNOTATION_VISITOR, ANNOTATION_NODE, TYPE_ANNOTATION_NODE, LOCAL_VARIABLE_ANNOTATION_NODE}
-    );
-    public static final String[] TO_STRING = {
+    public static final String[] toString = {
         "nop",
         "aconst_null",
         "iconst_m1",
@@ -478,33 +471,29 @@ public abstract class Shortcode implements Opcodes {
         "T_SHORT",
         "T_INT",
         "T_LONG",
-    };
+        };
 
-    public static final Int2ReferenceOpenHashMap<String> frameToString = new Int2ReferenceOpenHashMap<>(
-        new int[]{-1, 0, 1, 2, 3, 4},
-        new String[]{"new", "full", "append", "chop", "same", "same1"},
-        0.75F
-    );
+    public static final FrameStringMap frameToString = new FrameStringMap();
 
     private static final HashMap<MethodInvocation, MethodNode> methodCache = new HashMap<>();
 
-    public static String getInternalName(final Class<?> klass) {
+    public static String getInternalName(Class<?> klass) {
         return toInternalName(klass.getName());
     }
 
-    public static String toInternalName(final String name) {
+    public static String toInternalName(String name) {
         return fromDescriptor(name).replace('.', '/');
     }
 
-    public static String getBinaryName(final ClassNode klass) {
+    public static String getBinaryName(ClassNode klass) {
         return toBinaryName(klass.name);
     }
 
-    public static String toBinaryName(final String internalName) {
+    public static String toBinaryName(String internalName) {
         return fromDescriptor(internalName).replace('/', '.');
     }
 
-    public static String getDescriptor(final Class<?> klass) {
+    public static String getDescriptor(Class<?> klass) {
         return toDescriptor(klass.getName());
     }
 
@@ -522,18 +511,18 @@ public abstract class Shortcode implements Opcodes {
                 return name;
             default:
                 name = name.charAt(0) == '['
-                       ? '[' + toDescriptor(name.substring(1))
-                       : name.charAt(name.length() - 1) == ';'
-                         ? name
-                         : "L" + name + ";";
+                    ? '[' + toDescriptor(name.substring(1))
+                    : name.charAt(name.length() - 1) == ';'
+                        ? name
+                        : "L" + name + ";";
 
                 return name.replace('.', '/');
         }
     }
 
-    public static String fromDescriptor(final String descriptor) {
+    public static String fromDescriptor(String descriptor) {
         if (descriptor.charAt(descriptor.length() - 1) == ';') {
-            final int LIndex = descriptor.indexOf('L');
+            int LIndex = descriptor.indexOf('L');
 
             return descriptor.substring(0, LIndex) + descriptor.substring(LIndex + 1, descriptor.length() - 1);
         }
@@ -541,33 +530,33 @@ public abstract class Shortcode implements Opcodes {
         return descriptor;
     }
 
-    public static String getLocation(final String name) {
+    public static String getLocation(String name) {
         return toInternalName(name) + ".class";
     }
 
-    public static String getPackage(final String name) {
-        final String binaryName = toBinaryName(name);
+    public static String getPackage(String name) {
+        String binaryName = toBinaryName(name);
 
         return binaryName.substring(0, binaryName.lastIndexOf('.'));
     }
 
-    public static String getClassName(final String name) {
-        final String binaryName = toBinaryName(name);
+    public static String getClassName(String name) {
+        String binaryName = toBinaryName(name);
 
         return binaryName.substring(binaryName.lastIndexOf('.') + 1);
     }
 
-    public static String[] getSupertypes(final ClassNode klass) {
-        final int size = klass.interfaces.size();
-        final String[] supertypes = klass.interfaces.toArray(new String[size + 1]);
+    public static String[] getSupertypes(ClassNode klass) {
+        int size = klass.interfaces.size();
+        String[] supertypes = klass.interfaces.toArray(new String[size + 1]);
         supertypes[size] = klass.superName;
 
         return supertypes;
     }
 
-    public static String composeMethodDescriptor(final String returnType, final String... parameterTypes) {
-        final StringBuilder descriptor = new StringBuilder().append('(');
-        final int parameterCount = parameterTypes.length;
+    public static String composeMethodDescriptor(String returnType, String... parameterTypes) {
+        StringBuilder descriptor = new StringBuilder().append('(');
+        int parameterCount = parameterTypes.length;
 
         for (int i = 0; i != parameterCount; i++) {
             descriptor.append(toDescriptor(parameterTypes[i]));
@@ -576,15 +565,15 @@ public abstract class Shortcode implements Opcodes {
         return descriptor.append(')').append(toDescriptor(returnType)).toString();
     }
 
-    public static void insertBeforeEveryReturn(final MethodNode in, final AbstractInsnNode instruction) {
-        final InsnList box = new InsnList();
+    public static void insertBeforeEveryReturn(MethodNode in, AbstractInsnNode instruction) {
+        InsnList box = new InsnList();
 
         box.add(instruction);
     }
 
-    public static void insertBeforeEveryReturn(final MethodNode in, final InsnList instructions) {
-        final LabelNode end = new LabelNode();
-        final int locals = in.maxLocals;
+    public static void insertBeforeEveryReturn(MethodNode in, InsnList instructions) {
+        LabelNode end = new LabelNode();
+        int locals = in.maxLocals;
         AbstractInsnNode instruction = instructions.getFirst();
 
         while (instruction != null) {
@@ -596,33 +585,33 @@ public abstract class Shortcode implements Opcodes {
         }
     }
 
-    public static InsnList inline(final MethodInsnNode invocation) {
+    public static InsnList inline(MethodInsnNode invocation) {
         return inline(getMethod(invocation), invocation);
     }
 
-    public static InsnList inline(final MethodInsnNode invocation, final MethodNode in) {
+    public static InsnList inline(MethodInsnNode invocation, MethodNode in) {
         return inline(getMethod(invocation), in.instructions.getLast());
     }
 
-    public static InsnList inline(final MethodInsnNode invocation, final InsnList in) {
+    public static InsnList inline(MethodInsnNode invocation, InsnList in) {
         return inline(getMethod(invocation), in.getLast());
     }
 
-    public static InsnList inline(final MethodNode toInline, final MethodNode in) {
+    public static InsnList inline(MethodNode toInline, MethodNode in) {
         return inline(hasFlag(toInline.access, ACC_STATIC), toInline.instructions, Shortcode.getExplicitParameters(toInline), in.instructions.getLast());
     }
 
-    public static InsnList inline(final MethodNode toInline, final InsnList in) {
+    public static InsnList inline(MethodNode toInline, InsnList in) {
         return inline(hasFlag(toInline.access, ACC_STATIC), toInline.instructions, Shortcode.getExplicitParameters(toInline), in.getLast());
     }
 
-    public static InsnList inline(final MethodNode toInline, final AbstractInsnNode inlineStart) {
+    public static InsnList inline(MethodNode toInline, AbstractInsnNode inlineStart) {
         return inline(hasFlag(toInline.access, ACC_STATIC), toInline.instructions, Shortcode.getExplicitParameters(toInline), inlineStart);
     }
 
-    public static InsnList inline(final boolean isStatic, final InsnList instructions, List<String> parameters, final AbstractInsnNode inlineStart) {
+    public static InsnList inline(boolean isStatic, InsnList instructions, List<String> parameters, AbstractInsnNode inlineStart) {
         final int parameterCount = parameters.size();
-        final Int2IntOpenHashMap newIndexes = new Int2IntOpenHashMap();
+        final Map<Integer, Integer> newIndexes = new HashMap<>();
         final InsnList inlined = new InsnList();
         final int lastIndex = getNextVariableIndex(isStatic, inlineStart) + parameterCount - 1;
         int index = parameterCount - 1;
@@ -702,17 +691,17 @@ public abstract class Shortcode implements Opcodes {
         return 1;
     }
 
-    public static MethodNode copyMethod(final ClassNode klass, final MethodNode method) {
+    public static MethodNode copyMethod(ClassNode klass, MethodNode method) {
         method.accept(klass);
 
         return getFirstDeclaredMethod(klass, method.name);
     }
 
-    public static InsnList copyInstructions(final InsnList instructions) {
+    public static InsnList copyInstructions(InsnList instructions) {
         return copyInstructions(instructions, new InsnList());
     }
 
-    public static <T extends InsnList> T copyInstructions(final InsnList instructions, final T storage) {
+    public static <T extends InsnList> T copyInstructions(InsnList instructions, T storage) {
         AbstractInsnNode instruction = instructions.getFirst();
 
         while (instruction != null) {
@@ -724,29 +713,15 @@ public abstract class Shortcode implements Opcodes {
         return storage;
     }
 
-    public static List<? extends AbstractInsnNode> clone(final List<? extends AbstractInsnNode> instructions) {
-        final int length = instructions.size();
-        final ReferenceArrayList<AbstractInsnNode> clones = new ReferenceArrayList<>(length);
-
-        for (int i = 0; i < length; i++) {
-            clones.add(clone(instructions.get(i)));
-        }
-
-        return clones;
+    public static List<? extends AbstractInsnNode> clone(List<? extends AbstractInsnNode> instructions) {
+        return instructions.stream().map(Shortcode::clone).collect(Collectors.toList());
     }
 
-    public static <T extends AbstractInsnNode> T[] clone(final T... instructions) {
-        final int length = instructions.length;
-        final T[] clones = (T[]) Array.newInstance(instructions.getClass().getComponentType(), length);
-
-        for (int i = 0; i < length; i++) {
-            clones[i] = clone(instructions[i]);
-        }
-
-        return clones;
+    public static <T extends AbstractInsnNode> T[] clone(T... instructions) {
+        return (T[]) Stream.of(instructions).map(Shortcode::clone).toArray();
     }
 
-    public static <T extends AbstractInsnNode> T clone(final T instruction) {
+    public static <T extends AbstractInsnNode> T clone(T instruction) {
         switch (instruction.getType()) {
             case AbstractInsnNode.INSN:
                 return (T) new InsnNode(instruction.getOpcode());
@@ -757,16 +732,16 @@ public abstract class Shortcode implements Opcodes {
             case AbstractInsnNode.TYPE_INSN:
                 return (T) new TypeInsnNode(instruction.getOpcode(), ((TypeInsnNode) instruction).desc);
             case AbstractInsnNode.FIELD_INSN:
-                final FieldInsnNode fieldInstruction = (FieldInsnNode) instruction;
+                FieldInsnNode fieldInstruction = (FieldInsnNode) instruction;
 
                 return (T) new FieldInsnNode(instruction.getOpcode(), fieldInstruction.owner, fieldInstruction.name, fieldInstruction.desc);
             case AbstractInsnNode.METHOD_INSN:
-                final MethodInsnNode methodInstruction = (MethodInsnNode) instruction;
+                MethodInsnNode methodInstruction = (MethodInsnNode) instruction;
 
                 return (T) new MethodInsnNode(instruction.getOpcode(), methodInstruction.owner, methodInstruction.name, methodInstruction.desc, methodInstruction.itf);
             case AbstractInsnNode.INVOKE_DYNAMIC_INSN:
-                final InvokeDynamicInsnNode lambdaInstruction = (InvokeDynamicInsnNode) instruction;
-                final Object[] args = lambdaInstruction.bsmArgs;
+                InvokeDynamicInsnNode lambdaInstruction = (InvokeDynamicInsnNode) instruction;
+                Object[] args = lambdaInstruction.bsmArgs;
 
                 return (T) new InvokeDynamicInsnNode(lambdaInstruction.name, lambdaInstruction.desc, lambdaInstruction.bsm, Arrays.copyOf(args, args.length));
             case AbstractInsnNode.JUMP_INSN:
@@ -776,17 +751,17 @@ public abstract class Shortcode implements Opcodes {
             case AbstractInsnNode.LDC_INSN:
                 return (T) new LdcInsnNode(((LdcInsnNode) instruction).cst);
             case AbstractInsnNode.IINC_INSN:
-                final IincInsnNode incrementation = (IincInsnNode) instruction;
+                IincInsnNode incrementation = (IincInsnNode) instruction;
 
                 return (T) new IincInsnNode(incrementation.var, incrementation.incr);
             case AbstractInsnNode.TABLESWITCH_INSN:
-                final TableSwitchInsnNode tableSwitchNode = (TableSwitchInsnNode) instruction;
+                TableSwitchInsnNode tableSwitchNode = (TableSwitchInsnNode) instruction;
 
                 return (T) new TableSwitchInsnNode(tableSwitchNode.min, tableSwitchNode.max, clone(tableSwitchNode.dflt), clone(tableSwitchNode.labels).toArray(new LabelNode[0]));
             case AbstractInsnNode.LOOKUPSWITCH_INSN:
-                final LookupSwitchInsnNode lookupSwitchNode = (LookupSwitchInsnNode) instruction;
-                final Object[] keyObjects = lookupSwitchNode.keys.toArray();
-                final int[] keys = new int[keyObjects.length];
+                LookupSwitchInsnNode lookupSwitchNode = (LookupSwitchInsnNode) instruction;
+                Object[] keyObjects = lookupSwitchNode.keys.toArray();
+                int[] keys = new int[keyObjects.length];
 
                 for (int i = 0; i < keyObjects.length; i++) {
                     keys[i] = (int) keyObjects[i];
@@ -794,17 +769,17 @@ public abstract class Shortcode implements Opcodes {
 
                 return (T) new LookupSwitchInsnNode(clone(lookupSwitchNode.dflt), keys, clone(lookupSwitchNode.labels).toArray(new LabelNode[0]));
             case AbstractInsnNode.MULTIANEWARRAY_INSN:
-                final MultiANewArrayInsnNode arrayInstruction = (MultiANewArrayInsnNode) instruction;
+                MultiANewArrayInsnNode arrayInstruction = (MultiANewArrayInsnNode) instruction;
 
                 return (T) new MultiANewArrayInsnNode(arrayInstruction.desc, arrayInstruction.dims);
             case AbstractInsnNode.FRAME:
-                final FrameNode frameNode = (FrameNode) instruction;
-                final List<Object> local = frameNode.local;
-                final List<Object> stack = frameNode.stack;
-                final int localSize;
-                final Object[] localArray;
-                final int stackSize;
-                final Object[] stackArray;
+                FrameNode frameNode = (FrameNode) instruction;
+                List<Object> local = frameNode.local;
+                List<Object> stack = frameNode.stack;
+                int localSize;
+                Object[] localArray;
+                int stackSize;
+                Object[] stackArray;
 
                 if (local == null) {
                     localSize = 0;
@@ -824,7 +799,7 @@ public abstract class Shortcode implements Opcodes {
 
                 return (T) new FrameNode(frameNode.getOpcode(), localSize, localArray, stackSize, stackArray);
             case AbstractInsnNode.LINE:
-                final LineNumberNode lineNode = (LineNumberNode) instruction;
+                LineNumberNode lineNode = (LineNumberNode) instruction;
 
                 return (T) new LineNumberNode(lineNode.line, clone(lineNode.start));
         }
@@ -832,37 +807,37 @@ public abstract class Shortcode implements Opcodes {
         throw new IllegalArgumentException(String.valueOf(instruction));
     }
 
-    public static ClassNode getClassNode(final Class<?> klass) {
+    public static ClassNode getClassNode(Class<?> klass) {
         return getClassNode(klass.getName());
     }
 
-    public static ClassNode getClassNode(final String className) {
+    public static ClassNode getClassNode(String className) {
         try {
-            final ClassNode klass = new ClassNode();
-            final ClassReader reader = new ClassReader(className);
+            ClassNode klass = new ClassNode();
+            ClassReader reader = new ClassReader(className);
 
             reader.accept(klass, 0);
 
             return klass;
-        } catch (final IOException exception) {
+        } catch (IOException exception) {
             throw new RuntimeException(exception);
         }
     }
 
-    public static ClassNode getClassNode(final InputStream input) {
+    public static ClassNode getClassNode(InputStream input) {
         try {
-            final ClassNode klass = new ClassNode();
-            final ClassReader reader = new ClassReader(input);
+            ClassNode klass = new ClassNode();
+            ClassReader reader = new ClassReader(input);
 
             reader.accept(klass, 0);
 
             return klass;
-        } catch (final IOException exception) {
+        } catch (IOException exception) {
             throw new RuntimeException(exception);
         }
     }
 
-    public static LocalVariableNode getLocalVariable(final MethodNode method, final int index) {
+    public static LocalVariableNode getLocalVariable(MethodNode method, int index) {
         LocalVariableNode result = null;
 
         for (final LocalVariableNode local : method.localVariables) {
@@ -968,8 +943,8 @@ public abstract class Shortcode implements Opcodes {
         return (MethodNode) notFound;
     }
 
-    public static ReferenceArrayList<MethodNode> getAllMethods(ClassNode klass) {
-        final ReferenceArrayList<MethodNode> methods = new ReferenceArrayList<>();
+    public static List<MethodNode> getAllMethods(ClassNode klass) {
+        List<MethodNode> methods = new ArrayList<>();
 
         while (true) {
             methods.addAll(klass.methods);
@@ -992,12 +967,12 @@ public abstract class Shortcode implements Opcodes {
         return methods;
     }
 
-    public static ReferenceArrayList<MethodNode> getMethods(final String internalClassName, final String name) {
+    public static List<MethodNode> getMethods(String internalClassName, String name) {
         return getMethods(getClassNode(internalClassName), name);
     }
 
-    public static ReferenceArrayList<MethodNode> getMethods(final ClassNode klass, final String name) {
-        final ReferenceArrayList<MethodNode> methods = new ReferenceArrayList<>();
+    public static List<MethodNode> getMethods(ClassNode klass, String name) {
+        final List<MethodNode> methods = new ArrayList<>();
 
         for (final MethodNode method : klass.methods) {
             if (name.equals(method.name)) {
@@ -1008,10 +983,10 @@ public abstract class Shortcode implements Opcodes {
         return methods;
     }
 
-    public static ReferenceArrayList<AbstractInsnNode> getInstructions(final InsnList instructions, final Predicate<AbstractInsnNode> condition) {
-        final ReferenceArrayList<AbstractInsnNode> matchingInstructions = new ReferenceArrayList<>();
+    public static List<AbstractInsnNode> getInstructions(InsnList instructions, Predicate<AbstractInsnNode> condition) {
+        List<AbstractInsnNode> matchingInstructions = new ArrayList<>();
 
-        for (final AbstractInsnNode instruction : instructions) {
+        for (AbstractInsnNode instruction : instructions) {
             if (condition.test(instruction)) {
                 matchingInstructions.add(instruction);
             }
@@ -1020,21 +995,21 @@ public abstract class Shortcode implements Opcodes {
         return matchingInstructions;
     }
 
-    public static int countExplicitParameters(final InvokeDynamicInsnNode instruction) {
+    public static int countExplicitParameters(InvokeDynamicInsnNode instruction) {
         return countExplicitParameters(instruction.desc);
     }
 
-    public static int countExplicitParameters(final MethodInsnNode instruction) {
+    public static int countExplicitParameters(MethodInsnNode instruction) {
         return countExplicitParameters(instruction.desc);
     }
 
-    public static int countExplicitParameters(final MethodNode method) {
+    public static int countExplicitParameters(MethodNode method) {
         return countExplicitParameters(method.desc);
     }
 
-    public static int countExplicitParameters(final String descriptor) {
-        final String terminators = "VZCBSIJFD;";
-        final int end = descriptor.indexOf(')');
+    public static int countExplicitParameters(String descriptor) {
+        String terminators = "VZCBSIJFD;";
+        int end = descriptor.indexOf(')');
         int parameterCount = 0;
         int length = 0;
         char character;
@@ -1052,20 +1027,20 @@ public abstract class Shortcode implements Opcodes {
         return parameterCount;
     }
 
-    public static ReferenceArrayList<String> getExplicitParameters(final InvokeDynamicInsnNode instruction) {
+    public static List<String> getExplicitParameters(final InvokeDynamicInsnNode instruction) {
         return getExplicitParameters(instruction.desc);
     }
 
-    public static ReferenceArrayList<String> getExplicitParameters(final MethodInsnNode instruction) {
+    public static List<String> getExplicitParameters(final MethodInsnNode instruction) {
         return getExplicitParameters(instruction.desc);
     }
 
-    public static ReferenceArrayList<String> getExplicitParameters(final MethodNode method) {
+    public static List<String> getExplicitParameters(final MethodNode method) {
         return getExplicitParameters(method.desc);
     }
 
-    public static ReferenceArrayList<String> getExplicitParameters(final String descriptor) {
-        final ReferenceArrayList<String> parameters = new ReferenceArrayList<>();
+    public static List<String> getExplicitParameters(final String descriptor) {
+        final List<String> parameters = new ArrayList<>();
         final int end = descriptor.indexOf(')');
         final StringBuilder parameter = new StringBuilder();
         final String primitives = "VZCBSIJFD";
@@ -1100,20 +1075,20 @@ public abstract class Shortcode implements Opcodes {
         return descriptor.substring(descriptor.indexOf(')') + 1);
     }
 
-    public static ReferenceArrayList<String> parseDescriptor(final InvokeDynamicInsnNode instruction) {
+    public static List<String> parseDescriptor(final InvokeDynamicInsnNode instruction) {
         return parseDescriptor(instruction.desc);
     }
 
-    public static ReferenceArrayList<String> parseDescriptor(final MethodInsnNode instruction) {
+    public static List<String> parseDescriptor(final MethodInsnNode instruction) {
         return parseDescriptor(instruction.desc);
     }
 
-    public static ReferenceArrayList<String> parseDescriptor(final MethodNode method) {
+    public static List<String> parseDescriptor(final MethodNode method) {
         return parseDescriptor(method.desc);
     }
 
-    public static ReferenceArrayList<String> parseDescriptor(final String descriptor) {
-        final ReferenceArrayList<String> types = new ReferenceArrayList<>();
+    public static List<String> parseDescriptor(final String descriptor) {
+        final List<String> types = new ArrayList<>();
         final int end = descriptor.indexOf(')');
         final String primitives = "VZCBSIJFD";
         final StringBuilder parameter = new StringBuilder();
@@ -1796,8 +1771,8 @@ public abstract class Shortcode implements Opcodes {
         }
     }
 
-    public static ReferenceArrayList<AbstractInsnNode> getInstructions(final InsnList instructions) {
-        final ReferenceArrayList<AbstractInsnNode> list = new ReferenceArrayList<>();
+    public static List<AbstractInsnNode> getInstructions(final InsnList instructions) {
+        final List<AbstractInsnNode> list = new ArrayList<>();
         AbstractInsnNode instruction = instructions.getFirst();
 
         while (instruction != null) {
@@ -2136,17 +2111,14 @@ public abstract class Shortcode implements Opcodes {
             return false;
         }
 
-        switch (CLASS_TO_INT.getInt(klass)) {
-            case ANNOTATION_VISITOR:
-                return true;
-            case ANNOTATION_NODE:
-                return equals((AnnotationNode) annotation, (AnnotationNode) other);
-            case TYPE_ANNOTATION_NODE:
-                return equals((TypeAnnotationNode) annotation, (TypeAnnotationNode) other);
-            case LOCAL_VARIABLE_ANNOTATION_NODE:
-                return equals((LocalVariableAnnotationNode) annotation, (LocalVariableAnnotationNode) other);
-            default:
-                return annotation.equals(other);
+        if (klass == AnnotationNode.class) {
+            return equals((AnnotationNode) annotation, (AnnotationNode) other);
+        } else if (klass == TypeAnnotationNode.class) {
+            return equals((TypeAnnotationNode) annotation, (TypeAnnotationNode) other);
+        } else if (klass == LocalVariableAnnotationNode.class) {
+            return equals((LocalVariableAnnotationNode) annotation, (LocalVariableAnnotationNode) other);
+        } else {
+            return annotation.equals(other);
         }
     }
 }

@@ -1,6 +1,7 @@
 package user11681.shortcode.inject;
 
-import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
+import java.util.ArrayList;
+import java.util.List;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnList;
 
@@ -12,8 +13,8 @@ public abstract class InjectionContext {
         this.offset = offset;
     }
 
-    public ReferenceArrayList<AbstractInsnNode> findMatches(final InsnList instructions) {
-        final ReferenceArrayList<AbstractInsnNode> matches = ReferenceArrayList.wrap(new AbstractInsnNode[3]);
+    public List<AbstractInsnNode> findMatches(final InsnList instructions) {
+        List<AbstractInsnNode> matches = new ArrayList<>();
 
         AbstractInsnNode instruction = instructions.getFirst();
 

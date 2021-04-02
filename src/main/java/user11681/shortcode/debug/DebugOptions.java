@@ -1,10 +1,7 @@
 package user11681.shortcode.debug;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 public class DebugOptions {
-    public static final Logger DEFAULT_LOGGER = LogManager.getLogger("Shortcode");
+    public static final Printer DEFAULT_LOGGER = System.out::println;
     public static final boolean DEFAULT_UPPERCASE = false;
     public static final boolean DEFAULT_INDEXES = true;
     public static final String DEFAULT_INDENTATION = "  ";
@@ -12,17 +9,17 @@ public class DebugOptions {
     public boolean uppercase;
     public boolean indexes;
     public String indentation;
-    public Logger logger;
+    public Printer printer;
 
     protected DebugOptions() {
         this(DEFAULT_UPPERCASE, DEFAULT_INDEXES, DEFAULT_INDENTATION, DEFAULT_LOGGER);
     }
 
-    protected DebugOptions(final boolean uppercase, final boolean indexes, final String indentation, final Logger logger) {
+    protected DebugOptions(boolean uppercase, boolean indexes, String indentation, Printer printer) {
         this.uppercase = uppercase;
         this.indexes = indexes;
         this.indentation = indentation;
-        this.logger = logger;
+        this.printer = printer;
     }
 
     public static DebugOptions defaultOptions() {
@@ -30,24 +27,24 @@ public class DebugOptions {
     }
 
     public DebugOptions uppercase() {
-        return new DebugOptions(true, this.indexes, this.indentation, this.logger);
+        return new DebugOptions(true, this.indexes, this.indentation, this.printer);
     }
 
     public DebugOptions indexes() {
-        return new DebugOptions(this.uppercase, true, this.indentation, this.logger);
+        return new DebugOptions(this.uppercase, true, this.indentation, this.printer);
     }
 
-    public DebugOptions indentation(final int indentation) {
-        final StringBuilder indentationBuilder = new StringBuilder();
+    public DebugOptions indentation(int indentation) {
+        StringBuilder indentationBuilder = new StringBuilder();
 
         for (int i = 0; i < indentation; i++) {
             indentationBuilder.append(' ');
         }
 
-        return new DebugOptions(this.uppercase, this.indexes, indentationBuilder.toString(), this.logger);
+        return new DebugOptions(this.uppercase, this.indexes, indentationBuilder.toString(), this.printer);
     }
 
-    public DebugOptions logger(final Logger logger) {
-        return new DebugOptions(this.uppercase, this.indexes, this.indentation, logger);
+    public DebugOptions printer(Printer printer) {
+        return new DebugOptions(this.uppercase, this.indexes, this.indentation, printer);
     }
 }
